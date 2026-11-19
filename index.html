@@ -208,7 +208,7 @@
         </div>
 
         <div class="overflow-x-auto -mx-4 sm:mx-0">
-          <table class="w-full text-left border-collapse min-w-[960px]">
+          <table class="w-full text-left border-collapse min-w-[1080px]">
             <thead>
               <tr class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-y border-slate-200">
                 <th class="py-3 px-2.5 font-semibold w-9">No</th>
@@ -217,7 +217,8 @@
                 <th class="py-3 px-2.5 font-semibold text-right" id="th-target">Target</th>
                 <th class="py-3 px-2.5 font-semibold text-right">31 Okt</th>
                 <th class="py-3 px-2.5 font-semibold text-right">18 Nov</th>
-                <th class="py-3 px-2.5 font-semibold w-40" id="th-ach">Ach (MtD)</th>
+                <th class="py-3 px-2.5 font-semibold text-right">Kurang / Lebih Target</th>
+                <th class="py-3 px-2.5 font-semibold w-36" id="th-ach">Ach (MtD)</th>
                 <th class="py-3 px-2.5 font-semibold text-right" id="th-nilai">Nilai KPI</th>
                 <th class="py-3 px-2.5 font-semibold text-right">Delta Poin</th>
               </tr>
@@ -449,6 +450,32 @@
       if (PERCENT_SUBS.has(sub)) return fmtNum(val, 2) + '%';
       if (GRAM_SUBS.has(sub)) return fmtNum(val, val % 1 === 0 ? 0 : 2) + ' gr';
       return fmtNum(val, 0);
+    }
+
+    const REVERSE_SUBS = new Set([
+      'NPL GADAI', 'NPL NON GADAI', 'NPL EMAS',
+      'LAR GADAI', 'LAR NON GADAI', 'LAR EMAS'
+    ]);
+
+    function fmtGapToTarget(sub, realisasi, target) {
+      if (realisasi === null || realisasi === undefined || target === null || target === undefined || isNaN(realisasi) || isNaN(target)) {
+        return '<span class="text-slate-300">—</span>';
+      }
+      if (REVERSE_SUBS.has(sub)) {
+        const excess = realisasi - target;
+        if (excess > 0.0001) {
+          return `<span title="Melebihi batas target sebesar ${fmtNum(excess, 2)}%" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">Over +${fmtNum(excess, 2)}%</span>`;
+        }
+        return `<span title="Lebih baik ${fmtNum(Math.abs(excess), 2)}% di bawah batas target" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700">Aman -${fmtNum(Math.abs(excess), 2)}%</span>`;
+      }
+      const gap = realisasi - target;
+      const exactTitle = CURRENCY_SUBS.has(sub)
+        ? `Selisih eksak: ${gap >= 0 ? '+' : '-'}Rp ${fmtNum(Math.abs(gap), 0)}`
+        : `Selisih eksak: ${gap >= 0 ? '+' : '-'}${fmtNum(Math.abs(gap), GRAM_SUBS.has(sub) ? 2 : 0)}`;
+      if (gap < -0.0001) {
+        return `<span title="${exactTitle}" class="font-bold text-rose-600">-${fmtValueBySub(sub, Math.abs(gap))}</span>`;
+      }
+      return `<span title="${exactTitle}" class="font-semibold text-emerald-700">+${fmtValueBySub(sub, gap)}</span>`;
     }
 
     function deltaBadgeHtml(val, suffix = '') {
@@ -837,7 +864,7 @@
 
       const tbody = document.getElementById('kpi-table-body');
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-slate-400">Tidak ada indikator yang cocok dengan filter.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-slate-400">Tidak ada indikator yang cocok dengan filter.</td></tr>`;
       } else {
         tbody.innerHTML = filtered.map(r => {
           const target = isBln ? r.target_bln : r.target_thn;
@@ -860,6 +887,7 @@
               <td class="py-3 px-2.5 text-right text-slate-500">${fmtValueBySub(r.sub, target)}</td>
               <td class="py-3 px-2.5 text-right text-slate-500">${fmtValueBySub(r.sub, r.prev_realisasi)}</td>
               <td class="py-3 px-2.5 text-right font-semibold text-slate-900">${fmtValueBySub(r.sub, r.realisasi)}</td>
+              <td class="py-3 px-2.5 text-right whitespace-nowrap">${fmtGapToTarget(r.sub, r.realisasi, target)}</td>
               <td class="py-3 px-2.5">
                 ${ach !== null && (hasWeight || r.sub === 'KPI STRETCH GOAL') ? `
                   <div class="flex items-center justify-between text-[11px] mb-1">
@@ -885,7 +913,7 @@
         <tr>
           <td colspan="2" class="py-3.5 px-2.5">TOTAL (${filtered.length} Indikator)</td>
           <td class="py-3.5 px-2.5 text-right">${fmtNum(sumBobot, 1)}%</td>
-          <td colspan="4" class="py-3.5 px-2.5 text-right text-xs font-medium text-emerald-800">Akumulasi Skor &amp; Delta MtD</td>
+          <td colspan="5" class="py-3.5 px-2.5 text-right text-xs font-medium text-emerald-800">Akumulasi Skor &amp; Delta MtD</td>
           <td class="py-3.5 px-2.5 text-right text-base text-emerald-900">${fmtNum(sumNilai, 2)}</td>
           <td class="py-3.5 px-2.5 text-right">${deltaBadgeHtml(sumDelta)}</td>
         </tr>
