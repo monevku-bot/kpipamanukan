@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monev KPI Harian — PT Pegadaian Cabang Pamanukan (18 Nov 2026)</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .pegadaian-gradient {
+      background: linear-gradient(135deg, #004d28 0%, #006837 55%, #047857 100%);
+    }
+    .gold-accent {
+      background: linear-gradient(135deg, #d4af37 0%, #f59e0b 100%);
+    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #ffffff !important; }
+      .print-break { page-break-before: always; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 no-print"></div>
+
+  <!-- Header -->
+  <header class="pegadaian-gradient text-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-white/15 backdrop-blur border border-white/20 flex items-center justify-center shrink-0">
+            <svg class="w-6 h-6 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"></path>
+              <path d="M18 17V9"></path>
+              <path d="M13 17V5"></path>
+              <path d="M8 17v-3"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight">Monev KPI Harian</h1>
+              <span id="date-badge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-200 border border-amber-300/30">
+                18 Nov 2026
+              </span>
+            </div>
+            <p class="text-xs sm:text-sm text-emerald-100 mt-0.5">PT Pegadaian Cabang Pamanukan • Konsolidasi &amp; 6 Unit Outlet</p>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex flex-wrap items-center gap-2.5 no-print">
+          <div class="inline-flex rounded-lg bg-black/20 p-1 border border-white/15" role="group">
+            <button id="btn-period-bln" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-md transition bg-white text-emerald-900 shadow-sm">
+              Bulanan
+            </button>
+            <button id="btn-period-thn" type="button" class="px-3 py-1.5 text-xs font-semibold rounded-md transition text-emerald-100 hover:text-white">
+              Tahunan
+            </button>
+          </div>
+          <button id="btn-print" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-900 transition shadow-sm">
+            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            <span>Cetak / PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Unit Quick-Switch Bar -->
+      <div class="mt-5 pt-4 border-t border-white/15 no-print">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] uppercase tracking-wider font-semibold text-emerald-200">Pilih Unit / Outlet:</span>
+          <span id="active-unit-subtitle" class="text-xs text-amber-200 font-medium"></span>
+        </div>
+        <div id="unit-pills" class="flex gap-2 overflow-x-auto scrollbar-hide pb-1"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex gap-1 sm:gap-2 overflow-x-auto scrollbar-hide">
+        <button data-tab="overview" type="button" class="tab-btn flex items-center gap-2 px-4 py-3.5 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span>Ringkasan Eksekutif</span>
+        </button>
+        <button data-tab="table" type="button" class="tab-btn flex items-center gap-2 px-4 py-3.5 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition">
+          <i data-lucide="table-2" class="w-4 h-4"></i>
+          <span>Tabel Detail KPI</span>
+        </button>
+        <button data-tab="analysis" type="button" class="tab-btn flex items-center gap-2 px-4 py-3.5 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition">
+          <i data-lucide="lightbulb" class="w-4 h-4"></i>
+          <span>Analisa &amp; Saran</span>
+        </button>
+        <button data-tab="upload" type="button" class="tab-btn flex items-center gap-2 px-4 py-3.5 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition">
+          <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+          <span>Update Excel Harian</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- TAB 1: OVERVIEW -->
+    <section id="tab-overview" class="space-y-6">
+      <!-- 4 Hero KPI Cards -->
+      <div id="hero-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+
+      <!-- Charts Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-sm font-bold text-slate-800">Perbandingan Skor KPI Antar Unit</h2>
+              <p id="chart-unit-subtitle" class="text-xs text-slate-500 mt-0.5">Skor total Bulanan (bobot 100%)</p>
+            </div>
+            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Emas = Unit Aktif</span>
+          </div>
+          <div class="relative h-72">
+            <canvas id="chart-units"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 id="chart-comp-title" class="text-sm font-bold text-slate-800">Pencapaian per Komponen KPI</h2>
+              <p id="chart-comp-subtitle" class="text-xs text-slate-500 mt-0.5">Rasio Nilai KPI terhadap Bobot Komponen (%)</p>
+            </div>
+            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Target ≥ 90%</span>
+          </div>
+          <div class="relative h-72">
+            <canvas id="chart-components"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Red Zone Spotlight + Leaderboard -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Peringkat Kinerja Outlet (6 Unit di Bawah CP Pamanukan)</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Klik baris outlet mana saja untuk langsung membedah KPI dan analisanya.</p>
+          </div>
+          <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 self-start sm:self-auto">
+            Diurutkan berdasarkan Skor Aktif
+          </span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
+                <th class="py-3 px-4 font-semibold">Rank</th>
+                <th class="py-3 px-4 font-semibold">Unit / Outlet</th>
+                <th class="py-3 px-4 font-semibold text-right">Skor Bulanan</th>
+                <th class="py-3 px-4 font-semibold text-right">Skor Tahunan</th>
+                <th class="py-3 px-4 font-semibold text-right">Laba Usaha</th>
+                <th class="py-3 px-4 font-semibold text-right">OSL Gross</th>
+                <th class="py-3 px-4 font-semibold text-right">CIR</th>
+                <th class="py-3 px-4 font-semibold text-right">Stretch Goal</th>
+                <th class="py-3 px-4 font-semibold text-center">Zona Merah</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-body" class="divide-y divide-slate-100 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: DETAIL TABLE -->
+    <section id="tab-table" class="hidden space-y-5">
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-sm">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
+          <div>
+            <h2 id="table-unit-title" class="text-base font-bold text-slate-800">Rincian 27 Indikator KPI</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Gunakan filter di bawah untuk fokus pada indikator merah atau komponen tertentu.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 no-print">
+            <div class="relative">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+              <input id="search-kpi" type="text" placeholder="Cari indikator KPI..." class="pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 w-48 sm:w-56" />
+            </div>
+            <select id="filter-component" class="px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="ALL">Semua Komponen</option>
+            </select>
+            <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50">
+              <button data-status="ALL" type="button" class="status-filter-btn px-2.5 py-1.5 text-xs font-semibold rounded-md transition">Semua</button>
+              <button data-status="RED" type="button" class="status-filter-btn px-2.5 py-1.5 text-xs font-semibold rounded-md transition">Merah (&lt;70%)</button>
+              <button data-status="YELLOW" type="button" class="status-filter-btn px-2.5 py-1.5 text-xs font-semibold rounded-md transition">Kuning</button>
+              <button data-status="GREEN" type="button" class="status-filter-btn px-2.5 py-1.5 text-xs font-semibold rounded-md transition">Hijau (≥90%)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto -mx-4 sm:mx-0">
+          <table class="w-full text-left border-collapse min-w-[820px]">
+            <thead>
+              <tr class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-y border-slate-200">
+                <th class="py-3 px-3 font-semibold w-10">No</th>
+                <th class="py-3 px-3 font-semibold">Komponen &amp; Sub Indikator</th>
+                <th class="py-3 px-3 font-semibold text-right">Bobot</th>
+                <th class="py-3 px-3 font-semibold text-right" id="th-target">Target Bulanan</th>
+                <th class="py-3 px-3 font-semibold text-right">Realisasi</th>
+                <th class="py-3 px-3 font-semibold w-44" id="th-ach">Pencapaian (Ach)</th>
+                <th class="py-3 px-3 font-semibold text-right" id="th-nilai">Nilai KPI</th>
+              </tr>
+            </thead>
+            <tbody id="kpi-table-body" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
+            <tfoot id="kpi-table-foot" class="bg-emerald-50/70 font-bold text-slate-900 border-t-2 border-emerald-200 text-xs sm:text-sm"></tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: ANALYSIS & RECOMMENDATIONS -->
+    <section id="tab-analysis" class="hidden space-y-6">
+      <!-- Unit Executive Diagnosis Banner -->
+      <div id="analysis-banner" class="rounded-2xl p-5 sm:p-6 bg-white border border-slate-200 shadow-sm"></div>
+
+      <!-- 3-Column Analysis Cards -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="bg-white rounded-2xl border border-emerald-200 p-5 shadow-sm">
+          <div class="flex items-center gap-2.5 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <i data-lucide="trophy" class="w-4 h-4"></i>
+            </div>
+            <h3 class="text-sm font-bold text-slate-800">Kekuatan Utama (Ach ≥ 100%)</h3>
+          </div>
+          <ul id="analysis-strengths" class="space-y-2.5 text-xs sm:text-sm text-slate-700"></ul>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-rose-200 p-5 shadow-sm">
+          <div class="flex items-center gap-2.5 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center">
+              <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+            </div>
+            <h3 class="text-sm font-bold text-slate-800">Zona Merah Kritis (Ach &lt; 70%)</h3>
+          </div>
+          <ul id="analysis-redzones" class="space-y-2.5 text-xs sm:text-sm text-slate-700"></ul>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-amber-200 p-5 shadow-sm">
+          <div class="flex items-center gap-2.5 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+              <i data-lucide="compass" class="w-4 h-4"></i>
+            </div>
+            <h3 class="text-sm font-bold text-slate-800">Saran &amp; Rencana Aksi Cepat</h3>
+          </div>
+          <ul id="analysis-actions" class="space-y-2.5 text-xs sm:text-sm text-slate-700"></ul>
+        </div>
+      </div>
+
+      <!-- Cross-Outlet Branch Strategic Matrix -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+          <div>
+            <h3 class="text-base font-bold text-slate-800">Matriks Fokus Pengawasan &amp; Benchmarking Lintas Outlet</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Peta taktis CP Pamanukan: tiru praktik terbaik dari outlet juara untuk menambal lubang di outlet prioritas.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="rounded-xl bg-rose-50/70 border border-rose-200 p-4">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-rose-800 mb-2.5 flex items-center gap-1.5">
+              <i data-lucide="flame" class="w-4 h-4"></i> Prioritas Pengawasan Harian (Urgent)
+            </h4>
+            <ul class="space-y-2 text-xs sm:text-sm text-slate-700">
+              <li><strong class="text-rose-900">Kualitas Kredit Non Gadai &amp; LAR Gadai:</strong> Konsolidasi LAR Gadai di <strong>6,36%</strong> (target 2,86%) dan NPL Non Gadai <strong>9,07%</strong> (target 4,33%). Fokus intervensi di <strong>UPC Rancasari</strong> (LAR Gadai 11,93%, NPL Non Gadai 18,60%) dan <strong>UPC Ciasem</strong> (NPL Non Gadai 23,88%, LAR Gadai 8,59%, LAR Emas 26,62%).</li>
+              <li><strong class="text-rose-900">Gold Ecosystem (Deposito Emas &amp; Galeri 24):</strong> Deposito Emas konsolidasi baru <strong>72,69%</strong> dan Galeri 24 <strong>74,01%</strong>. Perlu dorongan ekstra di <strong>Rancasari</strong> (Deposito 23,25%), <strong>Ciasem</strong> (Deposito 31,52%, Galeri 24 39,29%), dan <strong>Pusaka Ratu</strong> (Galeri 24 39,00%).</li>
+              <li><strong class="text-rose-900">OSL Non Gadai &amp; Gross Posisi:</strong> OSL Non Gadai konsolidasi baru <strong>63,99%</strong> (Rp 9,89 M vs Rp 15,46 M). Perlu selektif ekspansi sambil membersihkan NPL.</li>
+              <li><strong class="text-rose-900">Digital TRING! &amp; Stretch Goal Pasar Wates:</strong> Pasar Wates perlu percepatan aktivasi Nasabah TRING! (57,28%), OSL TRING! (61,37%), dan Stretch Goal (42,36%).</li>
+            </ul>
+          </div>
+
+          <div class="rounded-xl bg-emerald-50/70 border border-emerald-200 p-4">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-emerald-800 mb-2.5 flex items-center gap-1.5">
+              <i data-lucide="award" class="w-4 h-4"></i> Best Practice Internal (Untuk Diduplikasi)
+            </h4>
+            <ul class="space-y-2 text-xs sm:text-sm text-slate-700">
+              <li><strong class="text-emerald-900">Benchmark Kualitas Non Gadai &amp; Efisiensi:</strong> <strong>UPC Pasar Wates</strong> mencatat NPL Non Gadai terbaik (<strong>1,10%</strong>, Ach 110%), LAR Non Gadai <strong>3,45%</strong>, OSL Non Gadai <strong>93,90%</strong>, serta CIR paling efisien (<strong>8,31%</strong>). Pola seleksi &amp; penagihan Non Gadai-nya layak di-sharing ke Ciasem &amp; Rancasari.</li>
+              <li><strong class="text-emerald-900">Benchmark Digital TRING! &amp; Sinergi Holding:</strong> <strong>Colocation BRI Bojongkeding</strong> meraih skor tertinggi (<strong>96,90</strong>) dengan capaian <strong>110%</strong> di seluruh indikator TRING! dan Cashless 93,09%.</li>
+              <li><strong class="text-emerald-900">Benchmark Galeri 24 &amp; OSL Gadai:</strong> <strong>UPC Rancasari</strong> menyumbang <strong>11.469 gr</strong> Galeri 24 (Ach 110%) dan OSL Gadai <strong>Rp 68,22 M</strong> (109,19%)—motor utama volume cabang.</li>
+              <li><strong class="text-emerald-900">Benchmark Deposito Emas &amp; Stretch Goal:</strong> <strong>UPC CP Pamanukan</strong> unggul di Deposito Emas (<strong>1.939 gr / 110,93%</strong>), TE Sinergi Holding (<strong>110%</strong>), dan Stretch Goal (<strong>169,54%</strong>).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: UPLOAD EXCEL HARIAN -->
+    <section id="tab-upload" class="hidden space-y-5">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm max-w-3xl mx-auto">
+        <div class="flex items-start gap-3.5 mb-5">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+            <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Update Data KPI Harian Langsung dari File Excel</h2>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">
+              Tidak perlu edit kode di GitHub setiap hari. Unggah 1 atau beberapa file Excel KPI Pegadaian (`.xlsx`) terbaru di sini untuk langsung memperbarui grafik, tabel, dan analisa secara instan.
+            </p>
+          </div>
+        </div>
+
+        <label id="drop-zone" for="excel-input" class="flex flex-col items-center justify-center border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-50 rounded-2xl p-8 cursor-pointer transition text-center">
+          <i data-lucide="upload-cloud" class="w-10 h-10 text-emerald-600 mb-2"></i>
+          <span class="text-sm font-bold text-slate-800">Klik untuk pilih file Excel KPI (.xlsx) atau seret ke sini</span>
+          <span class="text-xs text-slate-500 mt-1">Bisa pilih langsung 7 file sekaligus (format standar KPI Pegadaian: NO s.d. NILAI KPI TAHUNAN)</span>
+          <input id="excel-input" type="file" accept=".xlsx,.xls" multiple class="hidden" />
+        </label>
+
+        <div class="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-100">
+          <div class="flex items-center gap-2 text-xs text-slate-500">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+            <span>Privasi terjaga: file diproses 100% lokal di browser Anda, tidak diunggah ke server luar.</span>
+          </div>
+          <button id="btn-reset-data" type="button" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition shrink-0">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            <span>Reset ke Data 18 Nov 2026</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-8 py-4 text-center text-xs text-slate-500">
+    Dashboard Monev KPI Harian • PT Pegadaian Cabang Pamanukan • Sumber: Data KPI 18 November 2026 (7 Unit)
+  </footer>
+
+  <script>
+    const INITIAL_DATA = [{"id": "cp_konsolidasi", "name": "CP Pamanukan (Konsolidasi)", "short": "CP Konsolidasi", "code": "13309", "type": "Cabang Konsolidasi", "filename": "KPI_18-Nov-26_CP_CP PAMANUKAN_13309.xlsx", "total_bobot": 100.0, "total_nilai_bln": 91.53, "total_nilai_thn": 89.44, "cir": 19.48, "laba_real": 37392434417.511, "laba_target_bln": 25990667246.0, "osl_gross_real": 241124296364.0, "osl_gross_target": 336075955554.0, "osl_gadai_real": 260834670747.0, "osl_gadai_ach": 99.64, "stretch_ach": 73.15, "components": {"OUTSTANDING LOAN": {"bobot": 27.5, "nilai_bln": 23.21, "nilai_thn": 23.01, "items": 4, "ach_weighted_bln": 84.4}, "LABA USAHA": {"bobot": 10.0, "nilai_bln": 11.0, "nilai_thn": 11.0, "items": 1, "ach_weighted_bln": 110.0}, "CIR": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "NASABAH": {"bobot": 17.5, "nilai_bln": 17.69, "nilai_thn": 17.33, "items": 4, "ach_weighted_bln": 101.09}, "KUALITAS KREDIT": {"bobot": 15.0, "nilai_bln": 13.3, "nilai_thn": 13.29, "items": 6, "ach_weighted_bln": 88.67}, "REVAMP PEGADAIAN BRAND": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "GOLD ECOSYSTEM": {"bobot": 10.0, "nilai_bln": 7.65, "nilai_thn": 7.25, "items": 3, "ach_weighted_bln": 76.5}, "PEGADAIAN DIGITAL TRING!": {"bobot": 15.0, "nilai_bln": 14.24, "nilai_thn": 13.17, "items": 3, "ach_weighted_bln": 94.93}, "SINERGI HOLDING UMI": {"bobot": 5.0, "nilai_bln": 4.44, "nilai_thn": 4.39, "items": 3, "ach_weighted_bln": 88.8}, "KPI STRETCH GOAL": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}}, "rows": [{"no": 1, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA GADAI", "bobot": 10.0, "target_bln": 261786055760.0, "target_thn": 263290402696.0, "realisasi": 260834670747.0, "ach_bln": 99.64, "nilai_bln": 9.96, "ach_thn": 99.07, "nilai_thn": 9.91}, {"no": 2, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA NON GADAI", "bobot": 5.0, "target_bln": 15458205698.0, "target_thn": 15530778000.0, "realisasi": 9891256444.0, "ach_bln": 63.99, "nilai_bln": 3.2, "ach_thn": 63.69, "nilai_thn": 3.18}, {"no": 3, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA EMAS", "bobot": 7.5, "target_bln": 35867678621.0, "target_thn": 36369172270.0, "realisasi": 30901872719.0, "ach_bln": 86.16, "nilai_bln": 6.46, "ach_thn": 84.97, "nilai_thn": 6.37}, {"no": 4, "komponen": "OUTSTANDING LOAN", "sub": "OSL GROSS POSISI", "bobot": 5.0, "target_bln": 336075955554.0, "target_thn": 340055065946.0, "realisasi": 241124296364.0, "ach_bln": 71.75, "nilai_bln": 3.59, "ach_thn": 70.91, "nilai_thn": 3.55}, {"no": 5, "komponen": "LABA USAHA", "sub": "LABA USAHA", "bobot": 10.0, "target_bln": 25990667246.0, "target_thn": 28569404170.0, "realisasi": 37392434417.511, "ach_bln": 110.0, "nilai_bln": 11.0, "ach_thn": 110.0, "nilai_thn": 11.0}, {"no": 6, "komponen": "CIR", "sub": "CIR", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": 19.48, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 7, "komponen": "NASABAH", "sub": "NASABAH BARU", "bobot": 5.0, "target_bln": 6624.0, "target_thn": 7304.0, "realisasi": 9645.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 110.0, "nilai_thn": 5.5}, {"no": 8, "komponen": "NASABAH", "sub": "NASABAH BARU AGEN", "bobot": 2.5, "target_bln": 527.0, "target_thn": 575.0, "realisasi": 662.0, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 9, "komponen": "NASABAH", "sub": "NASABAH PEMBIAYAAN TAHUNAN", "bobot": 5.0, "target_bln": 20183.0, "target_thn": 21354.0, "realisasi": 18359.0, "ach_bln": 90.96, "nilai_bln": 4.55, "ach_thn": 85.97, "nilai_thn": 4.3}, {"no": 10, "komponen": "NASABAH", "sub": "NASABAH TABUNGAN EMAS", "bobot": 5.0, "target_bln": 1415.0, "target_thn": 1450.0, "realisasi": 1385.0, "ach_bln": 97.88, "nilai_bln": 4.89, "ach_thn": 95.52, "nilai_thn": 4.78}, {"no": 11, "komponen": "KUALITAS KREDIT", "sub": "NPL GADAI", "bobot": 3.0, "target_bln": 0.25, "target_thn": 0.3, "realisasi": 0.19, "ach_bln": 110.0, "nilai_bln": 3.3, "ach_thn": 110.0, "nilai_thn": 3.3}, {"no": 12, "komponen": "KUALITAS KREDIT", "sub": "NPL NON GADAI", "bobot": 2.0, "target_bln": 4.33, "target_thn": 4.25, "realisasi": 9.07, "ach_bln": 47.74, "nilai_bln": 0.95, "ach_thn": 46.86, "nilai_thn": 0.94}, {"no": 13, "komponen": "KUALITAS KREDIT", "sub": "NPL EMAS", "bobot": 2.5, "target_bln": 1.15, "target_thn": 1.14, "realisasi": 0.12, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 14, "komponen": "KUALITAS KREDIT", "sub": "LAR GADAI", "bobot": 3.0, "target_bln": 2.86, "target_thn": 2.86, "realisasi": 6.36, "ach_bln": 44.97, "nilai_bln": 1.35, "ach_thn": 44.97, "nilai_thn": 1.35}, {"no": 15, "komponen": "KUALITAS KREDIT", "sub": "LAR NON GADAI", "bobot": 2.0, "target_bln": 19.09, "target_thn": 18.47, "realisasi": 13.37, "ach_bln": 110.0, "nilai_bln": 2.2, "ach_thn": 110.0, "nilai_thn": 2.2}, {"no": 16, "komponen": "KUALITAS KREDIT", "sub": "LAR EMAS", "bobot": 2.5, "target_bln": 14.65, "target_thn": 14.66, "realisasi": 9.22, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 17, "komponen": "REVAMP PEGADAIAN BRAND", "sub": "BRAND AWARENESS", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": null, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 18, "komponen": "GOLD ECOSYSTEM", "sub": "DEPOSITO EMAS", "bobot": 2.5, "target_bln": 3937.0, "target_thn": 4002.0, "realisasi": 2862.0, "ach_bln": 72.69, "nilai_bln": 1.82, "ach_thn": 71.51, "nilai_thn": 1.79}, {"no": 19, "komponen": "GOLD ECOSYSTEM", "sub": "TABUNGAN EMAS", "bobot": 2.5, "target_bln": 10782.0, "target_thn": 11016.0, "realisasi": 9168.8581, "ach_bln": 85.04, "nilai_bln": 2.13, "ach_thn": 83.23, "nilai_thn": 2.08}, {"no": 20, "komponen": "GOLD ECOSYSTEM", "sub": "GRAMASI PRODUK GALERI 24", "bobot": 5.0, "target_bln": 27747.0, "target_thn": 30367.0, "realisasi": 20536.0, "ach_bln": 74.01, "nilai_bln": 3.7, "ach_thn": 67.63, "nilai_thn": 3.38}, {"no": 21, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "NASABAH TRING!", "bobot": 5.0, "target_bln": 7217.0, "target_thn": 7905.0, "realisasi": 6857.0, "ach_bln": 95.01, "nilai_bln": 4.75, "ach_thn": 86.74, "nilai_thn": 4.34}, {"no": 22, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "OSL LAYANAN TRING!", "bobot": 5.0, "target_bln": 4320737933.0, "target_thn": 4559384220.0, "realisasi": 3445501721.0, "ach_bln": 79.74, "nilai_bln": 3.99, "ach_thn": 75.57, "nilai_thn": 3.78}, {"no": 23, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "FREKUENSI TRANSAKSI TRING!", "bobot": 5.0, "target_bln": 50373.0, "target_thn": 55173.0, "realisasi": 55681.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 100.92, "nilai_thn": 5.05}, {"no": 24, "komponen": "SINERGI HOLDING UMI", "sub": "CASHLESS DISBURSEMENT", "bobot": 2.0, "target_bln": 77.37, "target_thn": 77.37, "realisasi": 71.56, "ach_bln": 92.49, "nilai_bln": 1.85, "ach_thn": 92.49, "nilai_thn": 1.85}, {"no": 25, "komponen": "SINERGI HOLDING UMI", "sub": "OSL SINERGI HOLDING", "bobot": 1.5, "target_bln": 458623213.0, "target_thn": 612259201.0, "realisasi": 1625473335.0, "ach_bln": 110.0, "nilai_bln": 1.65, "ach_thn": 110.0, "nilai_thn": 1.65}, {"no": 26, "komponen": "SINERGI HOLDING UMI", "sub": "TE SINERGI HOLDING", "bobot": 1.5, "target_bln": 2277.0, "target_thn": 2400.0, "realisasi": 1420.8044, "ach_bln": 62.4, "nilai_bln": 0.94, "ach_thn": 59.2, "nilai_thn": 0.89}, {"no": 27, "komponen": "KPI STRETCH GOAL", "sub": "KPI STRETCH GOAL", "bobot": null, "target_bln": 38466257904.0, "target_thn": 39388893076.0, "realisasi": 28137940319.0, "ach_bln": 73.15, "nilai_bln": 0.0, "ach_thn": 71.44, "nilai_thn": 0.0}]}, {"id": "colo_bojongkeding", "name": "Colocation BRI Bojongkeding", "short": "BRI Bojongkeding", "code": "17457", "type": "Colocation", "filename": "KPI_18-Nov-26_COLOCATION_BRI UNIT BOJONGKEDING_17457.xlsx", "total_bobot": 100.0, "total_nilai_bln": 96.9, "total_nilai_thn": 95.87, "cir": 30.26, "laba_real": 440600719.3802, "laba_target_bln": 3345242.0, "osl_gross_real": 3393148698.0, "osl_gross_target": 5301891542.0, "osl_gadai_real": 4208567501.0, "osl_gadai_ach": 98.48, "stretch_ach": 146.41, "components": {"OUTSTANDING LOAN": {"bobot": 27.5, "nilai_bln": 26.84, "nilai_thn": 26.56, "items": 4, "ach_weighted_bln": 97.6}, "LABA USAHA": {"bobot": 10.0, "nilai_bln": 11.0, "nilai_thn": 11.0, "items": 1, "ach_weighted_bln": 110.0}, "CIR": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "NASABAH": {"bobot": 17.5, "nilai_bln": 18.5, "nilai_thn": 18.24, "items": 4, "ach_weighted_bln": 105.71}, "KUALITAS KREDIT": {"bobot": 15.0, "nilai_bln": 12.15, "nilai_thn": 12.64, "items": 6, "ach_weighted_bln": 81.0}, "REVAMP PEGADAIAN BRAND": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "GOLD ECOSYSTEM": {"bobot": 10.0, "nilai_bln": 6.91, "nilai_thn": 6.5, "items": 3, "ach_weighted_bln": 69.1}, "PEGADAIAN DIGITAL TRING!": {"bobot": 15.0, "nilai_bln": 16.5, "nilai_thn": 15.99, "items": 3, "ach_weighted_bln": 110.0}, "SINERGI HOLDING UMI": {"bobot": 5.0, "nilai_bln": 5.0, "nilai_thn": 4.94, "items": 3, "ach_weighted_bln": 100.0}, "KPI STRETCH GOAL": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}}, "rows": [{"no": 1, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA GADAI", "bobot": 12.5, "target_bln": 4273415659.0, "target_thn": 4297775330.0, "realisasi": 4208567501.0, "ach_bln": 98.48, "nilai_bln": 12.31, "ach_thn": 97.92, "nilai_thn": 12.24}, {"no": 2, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA NON GADAI", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": null, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 3, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA EMAS", "bobot": 10.0, "target_bln": 714990843.0, "target_thn": 726005697.0, "realisasi": 810008514.0, "ach_bln": 113.29, "nilai_bln": 11.33, "ach_thn": 111.57, "nilai_thn": 11.16}, {"no": 4, "komponen": "OUTSTANDING LOAN", "sub": "OSL GROSS POSISI", "bobot": 5.0, "target_bln": 5301891542.0, "target_thn": 5361702218.0, "realisasi": 3393148698.0, "ach_bln": 64.0, "nilai_bln": 3.2, "ach_thn": 63.28, "nilai_thn": 3.16}, {"no": 5, "komponen": "LABA USAHA", "sub": "LABA USAHA", "bobot": 10.0, "target_bln": 3345242.0, "target_thn": 3185324.0, "realisasi": 440600719.3802, "ach_bln": 110.0, "nilai_bln": 11.0, "ach_thn": 110.0, "nilai_thn": 11.0}, {"no": 6, "komponen": "CIR", "sub": "CIR", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": 30.26, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 7, "komponen": "NASABAH", "sub": "NASABAH BARU", "bobot": 5.0, "target_bln": 208.0, "target_thn": 229.0, "realisasi": 334.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 110.0, "nilai_thn": 5.5}, {"no": 8, "komponen": "NASABAH", "sub": "NASABAH BARU AGEN", "bobot": 2.5, "target_bln": 33.0, "target_thn": 36.0, "realisasi": 40.0, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 9, "komponen": "NASABAH", "sub": "NASABAH PEMBIAYAAN TAHUNAN", "bobot": 5.0, "target_bln": 530.0, "target_thn": 561.0, "realisasi": 504.0, "ach_bln": 95.09, "nilai_bln": 4.75, "ach_thn": 89.84, "nilai_thn": 4.49}, {"no": 10, "komponen": "NASABAH", "sub": "NASABAH TABUNGAN EMAS", "bobot": 5.0, "target_bln": 27.0, "target_thn": 27.0, "realisasi": 44.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 110.0, "nilai_thn": 5.5}, {"no": 11, "komponen": "KUALITAS KREDIT", "sub": "NPL GADAI", "bobot": 4.0, "target_bln": 0.21, "target_thn": 0.26, "realisasi": 0.41, "ach_bln": 51.22, "nilai_bln": 2.05, "ach_thn": 63.41, "nilai_thn": 2.54}, {"no": 12, "komponen": "KUALITAS KREDIT", "sub": "NPL NON GADAI", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": null, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 13, "komponen": "KUALITAS KREDIT", "sub": "NPL EMAS", "bobot": 3.5, "target_bln": 1.12, "target_thn": 1.13, "realisasi": 0.0, "ach_bln": 110.0, "nilai_bln": 3.85, "ach_thn": 110.0, "nilai_thn": 3.85}, {"no": 14, "komponen": "KUALITAS KREDIT", "sub": "LAR GADAI", "bobot": 4.0, "target_bln": 2.56, "target_thn": 2.56, "realisasi": 4.26, "ach_bln": 60.09, "nilai_bln": 2.4, "ach_thn": 60.09, "nilai_thn": 2.4}, {"no": 15, "komponen": "KUALITAS KREDIT", "sub": "LAR NON GADAI", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": null, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 16, "komponen": "KUALITAS KREDIT", "sub": "LAR EMAS", "bobot": 3.5, "target_bln": 13.44, "target_thn": 13.47, "realisasi": 6.82, "ach_bln": 110.0, "nilai_bln": 3.85, "ach_thn": 110.0, "nilai_thn": 3.85}, {"no": 17, "komponen": "REVAMP PEGADAIAN BRAND", "sub": "BRAND AWARENESS", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": null, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 18, "komponen": "GOLD ECOSYSTEM", "sub": "DEPOSITO EMAS", "bobot": 2.5, "target_bln": 90.0, "target_thn": 91.0, "realisasi": 32.0, "ach_bln": 35.56, "nilai_bln": 0.89, "ach_thn": 35.16, "nilai_thn": 0.88}, {"no": 19, "komponen": "GOLD ECOSYSTEM", "sub": "TABUNGAN EMAS", "bobot": 2.5, "target_bln": 202.0, "target_thn": 207.0, "realisasi": 158.1883, "ach_bln": 78.31, "nilai_bln": 1.96, "ach_thn": 76.42, "nilai_thn": 1.91}, {"no": 20, "komponen": "GOLD ECOSYSTEM", "sub": "GRAMASI PRODUK GALERI 24", "bobot": 5.0, "target_bln": 732.0, "target_thn": 801.0, "realisasi": 594.5, "ach_bln": 81.22, "nilai_bln": 4.06, "ach_thn": 74.22, "nilai_thn": 3.71}, {"no": 21, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "NASABAH TRING!", "bobot": 5.0, "target_bln": 220.0, "target_thn": 240.0, "realisasi": 253.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 105.42, "nilai_thn": 5.27}, {"no": 22, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "OSL LAYANAN TRING!", "bobot": 5.0, "target_bln": 128179599.0, "target_thn": 135259312.0, "realisasi": 157331192.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 110.0, "nilai_thn": 5.5}, {"no": 23, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "FREKUENSI TRANSAKSI TRING!", "bobot": 5.0, "target_bln": 3190.0, "target_thn": 3494.0, "realisasi": 3648.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 104.41, "nilai_thn": 5.22}, {"no": 24, "komponen": "SINERGI HOLDING UMI", "sub": "CASHLESS DISBURSEMENT", "bobot": 2.0, "target_bln": 77.37, "target_thn": 77.37, "realisasi": 93.09, "ach_bln": 110.0, "nilai_bln": 2.2, "ach_thn": 110.0, "nilai_thn": 2.2}, {"no": 25, "komponen": "SINERGI HOLDING UMI", "sub": "OSL SINERGI HOLDING", "bobot": 1.5, "target_bln": 28663951.0, "target_thn": 38266200.0, "realisasi": 929049398.0, "ach_bln": 110.0, "nilai_bln": 1.65, "ach_thn": 110.0, "nilai_thn": 1.65}, {"no": 26, "komponen": "SINERGI HOLDING UMI", "sub": "TE SINERGI HOLDING", "bobot": 1.5, "target_bln": 207.0, "target_thn": 218.0, "realisasi": 158.1883, "ach_bln": 76.42, "nilai_bln": 1.15, "ach_thn": 72.56, "nilai_thn": 1.09}, {"no": 27, "komponen": "KPI STRETCH GOAL", "sub": "KPI STRETCH GOAL", "bobot": null, "target_bln": 669350978.0, "target_thn": 688354355.0, "realisasi": 980020590.0, "ach_bln": 146.41, "nilai_bln": 0.0, "ach_thn": 142.37, "nilai_thn": 0.0}]}, {"id": "upc_pamanukan", "name": "UPC CP Pamanukan", "short": "UPC Pamanukan", "code": "13309", "type": "UPC Induk", "filename": "KPI_18-Nov-26_UPC_CP PAMANUKAN_13309.xlsx", "total_bobot": 100.0, "total_nilai_bln": 93.28, "total_nilai_thn": 91.34, "cir": 37.56, "laba_real": 7728471466.0143, "laba_target_bln": 4611740207.0, "osl_gross_real": 87155417177.0, "osl_gross_target": 98473879902.0, "osl_gadai_real": 79572855083.0, "osl_gadai_ach": 97.88, "stretch_ach": 169.54, "components": {"OUTSTANDING LOAN": {"bobot": 27.5, "nilai_bln": 25.35, "nilai_thn": 25.11, "items": 4, "ach_weighted_bln": 92.18}, "LABA USAHA": {"bobot": 10.0, "nilai_bln": 11.0, "nilai_thn": 11.0, "items": 1, "ach_weighted_bln": 110.0}, "CIR": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "NASABAH": {"bobot": 17.5, "nilai_bln": 15.81, "nilai_thn": 15.33, "items": 4, "ach_weighted_bln": 90.34}, "KUALITAS KREDIT": {"bobot": 15.0, "nilai_bln": 13.23, "nilai_thn": 13.17, "items": 6, "ach_weighted_bln": 88.2}, "REVAMP PEGADAIAN BRAND": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "GOLD ECOSYSTEM": {"bobot": 10.0, "nilai_bln": 8.4, "nilai_thn": 8.03, "items": 3, "ach_weighted_bln": 84.0}, "PEGADAIAN DIGITAL TRING!": {"bobot": 15.0, "nilai_bln": 14.26, "nilai_thn": 13.47, "items": 3, "ach_weighted_bln": 95.07}, "SINERGI HOLDING UMI": {"bobot": 5.0, "nilai_bln": 5.23, "nilai_thn": 5.23, "items": 3, "ach_weighted_bln": 104.6}, "KPI STRETCH GOAL": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}}, "rows": [{"no": 1, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA GADAI", "bobot": 10.0, "target_bln": 81293601680.0, "target_thn": 81760758394.0, "realisasi": 79572855083.0, "ach_bln": 97.88, "nilai_bln": 9.79, "ach_thn": 97.32, "nilai_thn": 9.73}, {"no": 2, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA NON GADAI", "bobot": 5.0, "target_bln": 6732357920.0, "target_thn": 6760973425.0, "realisasi": 3943247146.0, "ach_bln": 58.57, "nilai_bln": 2.93, "ach_thn": 58.32, "nilai_thn": 2.92}, {"no": 3, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA EMAS", "bobot": 7.5, "target_bln": 4250842732.0, "target_thn": 4312503623.0, "realisasi": 4646351775.0, "ach_bln": 109.3, "nilai_bln": 8.2, "ach_thn": 107.74, "nilai_thn": 8.08}, {"no": 4, "komponen": "OUTSTANDING LOAN", "sub": "OSL GROSS POSISI", "bobot": 5.0, "target_bln": 98473879902.0, "target_thn": 99553631954.0, "realisasi": 87155417177.0, "ach_bln": 88.51, "nilai_bln": 4.43, "ach_thn": 87.55, "nilai_thn": 4.38}, {"no": 5, "komponen": "LABA USAHA", "sub": "LABA USAHA", "bobot": 10.0, "target_bln": 4611740207.0, "target_thn": 5079895835.0, "realisasi": 7728471466.0143, "ach_bln": 110.0, "nilai_bln": 11.0, "ach_thn": 110.0, "nilai_thn": 11.0}, {"no": 6, "komponen": "CIR", "sub": "CIR", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": 37.56, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 7, "komponen": "NASABAH", "sub": "NASABAH BARU", "bobot": 5.0, "target_bln": 1452.0, "target_thn": 1601.0, "realisasi": 2755.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 110.0, "nilai_thn": 5.5}, {"no": 8, "komponen": "NASABAH", "sub": "NASABAH BARU AGEN", "bobot": 2.5, "target_bln": 99.0, "target_thn": 108.0, "realisasi": 68.0, "ach_bln": 68.69, "nilai_bln": 1.72, "ach_thn": 62.96, "nilai_thn": 1.57}, {"no": 9, "komponen": "NASABAH", "sub": "NASABAH PEMBIAYAAN TAHUNAN", "bobot": 5.0, "target_bln": 5238.0, "target_thn": 5542.0, "realisasi": 4402.0, "ach_bln": 84.04, "nilai_bln": 4.2, "ach_thn": 79.43, "nilai_thn": 3.97}, {"no": 10, "komponen": "NASABAH", "sub": "NASABAH TABUNGAN EMAS", "bobot": 5.0, "target_bln": 550.0, "target_thn": 563.0, "realisasi": 483.0, "ach_bln": 87.82, "nilai_bln": 4.39, "ach_thn": 85.79, "nilai_thn": 4.29}, {"no": 11, "komponen": "KUALITAS KREDIT", "sub": "NPL GADAI", "bobot": 3.0, "target_bln": 0.25, "target_thn": 0.3, "realisasi": 0.13, "ach_bln": 110.0, "nilai_bln": 3.3, "ach_thn": 110.0, "nilai_thn": 3.3}, {"no": 12, "komponen": "KUALITAS KREDIT", "sub": "NPL NON GADAI", "bobot": 2.0, "target_bln": 3.19, "target_thn": 3.15, "realisasi": 13.57, "ach_bln": 23.51, "nilai_bln": 0.47, "ach_thn": 23.21, "nilai_thn": 0.46}, {"no": 13, "komponen": "KUALITAS KREDIT", "sub": "NPL EMAS", "bobot": 2.5, "target_bln": 1.1, "target_thn": 1.09, "realisasi": 0.28, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 14, "komponen": "KUALITAS KREDIT", "sub": "LAR GADAI", "bobot": 3.0, "target_bln": 2.87, "target_thn": 2.87, "realisasi": 3.41, "ach_bln": 84.16, "nilai_bln": 2.52, "ach_thn": 84.16, "nilai_thn": 2.52}, {"no": 15, "komponen": "KUALITAS KREDIT", "sub": "LAR NON GADAI", "bobot": 2.0, "target_bln": 12.67, "target_thn": 12.23, "realisasi": 17.61, "ach_bln": 71.95, "nilai_bln": 1.44, "ach_thn": 69.45, "nilai_thn": 1.39}, {"no": 16, "komponen": "KUALITAS KREDIT", "sub": "LAR EMAS", "bobot": 2.5, "target_bln": 13.67, "target_thn": 13.67, "realisasi": 5.22, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 17, "komponen": "REVAMP PEGADAIAN BRAND", "sub": "BRAND AWARENESS", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": null, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 18, "komponen": "GOLD ECOSYSTEM", "sub": "DEPOSITO EMAS", "bobot": 2.5, "target_bln": 1748.0, "target_thn": 1777.0, "realisasi": 1939.0, "ach_bln": 110.93, "nilai_bln": 2.77, "ach_thn": 109.12, "nilai_thn": 2.73}, {"no": 19, "komponen": "GOLD ECOSYSTEM", "sub": "TABUNGAN EMAS", "bobot": 2.5, "target_bln": 4189.0, "target_thn": 4280.0, "realisasi": 4069.8783, "ach_bln": 97.16, "nilai_bln": 2.43, "ach_thn": 95.09, "nilai_thn": 2.38}, {"no": 20, "komponen": "GOLD ECOSYSTEM", "sub": "GRAMASI PRODUK GALERI 24", "bobot": 5.0, "target_bln": 5846.0, "target_thn": 6398.0, "realisasi": 3742.0, "ach_bln": 64.01, "nilai_bln": 3.2, "ach_thn": 58.49, "nilai_thn": 2.92}, {"no": 21, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "NASABAH TRING!", "bobot": 5.0, "target_bln": 1836.0, "target_thn": 2010.0, "realisasi": 2151.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 107.01, "nilai_thn": 5.35}, {"no": 22, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "OSL LAYANAN TRING!", "bobot": 5.0, "target_bln": 1285931161.0, "target_thn": 1356956690.0, "realisasi": 940167004.0, "ach_bln": 73.11, "nilai_bln": 3.66, "ach_thn": 69.28, "nilai_thn": 3.46}, {"no": 23, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "FREKUENSI TRANSAKSI TRING!", "bobot": 5.0, "target_bln": 11006.0, "target_thn": 12055.0, "realisasi": 11225.0, "ach_bln": 101.99, "nilai_bln": 5.1, "ach_thn": 93.11, "nilai_thn": 4.66}, {"no": 24, "komponen": "SINERGI HOLDING UMI", "sub": "CASHLESS DISBURSEMENT", "bobot": 2.0, "target_bln": 77.37, "target_thn": 77.37, "realisasi": 74.7, "ach_bln": 96.55, "nilai_bln": 1.93, "ach_thn": 96.55, "nilai_thn": 1.93}, {"no": 25, "komponen": "SINERGI HOLDING UMI", "sub": "OSL SINERGI HOLDING", "bobot": 1.5, "target_bln": 85991852.0, "target_thn": 114798600.0, "realisasi": 216633097.0, "ach_bln": 110.0, "nilai_bln": 1.65, "ach_thn": 110.0, "nilai_thn": 1.65}, {"no": 26, "komponen": "SINERGI HOLDING UMI", "sub": "TE SINERGI HOLDING", "bobot": 1.5, "target_bln": 414.0, "target_thn": 436.0, "realisasi": 600.6022, "ach_bln": 110.0, "nilai_bln": 1.65, "ach_thn": 110.0, "nilai_thn": 1.65}, {"no": 27, "komponen": "KPI STRETCH GOAL", "sub": "KPI STRETCH GOAL", "bobot": null, "target_bln": 4165020197.0, "target_thn": 4268193000.0, "realisasi": 7061338672.0, "ach_bln": 169.54, "nilai_bln": 0.0, "ach_thn": 165.44, "nilai_thn": 0.0}]}, {"id": "upc_pusaka_ratu", "name": "UPC Pusaka Ratu", "short": "Pusaka Ratu", "code": "13311", "type": "UPC", "filename": "KPI_18-Nov-26_UPC_UPC PUSAKA RATU_13311.xlsx", "total_bobot": 100.0, "total_nilai_bln": 90.44, "total_nilai_thn": 88.21, "cir": 8.64, "laba_real": 5935406566.3957, "laba_target_bln": 4663587906.0, "osl_gross_real": 34083838401.0, "osl_gross_target": 45557346893.0, "osl_gadai_real": 34523929022.0, "osl_gadai_ach": 96.6, "stretch_ach": 66.58, "components": {"OUTSTANDING LOAN": {"bobot": 27.5, "nilai_bln": 23.28, "nilai_thn": 23.06, "items": 4, "ach_weighted_bln": 84.65}, "LABA USAHA": {"bobot": 10.0, "nilai_bln": 11.0, "nilai_thn": 11.0, "items": 1, "ach_weighted_bln": 110.0}, "CIR": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "NASABAH": {"bobot": 17.5, "nilai_bln": 17.59, "nilai_thn": 17.23, "items": 4, "ach_weighted_bln": 100.51}, "KUALITAS KREDIT": {"bobot": 15.0, "nilai_bln": 13.76, "nilai_thn": 13.75, "items": 6, "ach_weighted_bln": 91.73}, "REVAMP PEGADAIAN BRAND": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "GOLD ECOSYSTEM": {"bobot": 10.0, "nilai_bln": 5.71, "nilai_thn": 5.46, "items": 3, "ach_weighted_bln": 57.1}, "PEGADAIAN DIGITAL TRING!": {"bobot": 15.0, "nilai_bln": 15.02, "nilai_thn": 14.05, "items": 3, "ach_weighted_bln": 100.13}, "SINERGI HOLDING UMI": {"bobot": 5.0, "nilai_bln": 4.08, "nilai_thn": 3.66, "items": 3, "ach_weighted_bln": 81.6}, "KPI STRETCH GOAL": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}}, "rows": [{"no": 1, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA GADAI", "bobot": 10.0, "target_bln": 35739764880.0, "target_thn": 35945130370.0, "realisasi": 34523929022.0, "ach_bln": 96.6, "nilai_bln": 9.66, "ach_thn": 96.05, "nilai_thn": 9.6}, {"no": 2, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA NON GADAI", "bobot": 5.0, "target_bln": 3210544646.0, "target_thn": 3225257504.0, "realisasi": 1962648815.0, "ach_bln": 61.13, "nilai_bln": 3.06, "ach_thn": 60.85, "nilai_thn": 3.04}, {"no": 3, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA EMAS", "bobot": 7.5, "target_bln": 3694195547.0, "target_thn": 3746588264.0, "realisasi": 3357069438.0, "ach_bln": 90.87, "nilai_bln": 6.82, "ach_thn": 89.6, "nilai_thn": 6.72}, {"no": 4, "komponen": "OUTSTANDING LOAN", "sub": "OSL GROSS POSISI", "bobot": 5.0, "target_bln": 45557346893.0, "target_thn": 46065636096.0, "realisasi": 34083838401.0, "ach_bln": 74.82, "nilai_bln": 3.74, "ach_thn": 73.99, "nilai_thn": 3.7}, {"no": 5, "komponen": "LABA USAHA", "sub": "LABA USAHA", "bobot": 10.0, "target_bln": 4663587906.0, "target_thn": 5121021752.0, "realisasi": 5935406566.3957, "ach_bln": 110.0, "nilai_bln": 11.0, "ach_thn": 110.0, "nilai_thn": 11.0}, {"no": 6, "komponen": "CIR", "sub": "CIR", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": 8.64, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 7, "komponen": "NASABAH", "sub": "NASABAH BARU", "bobot": 5.0, "target_bln": 1080.0, "target_thn": 1190.0, "realisasi": 1726.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 110.0, "nilai_thn": 5.5}, {"no": 8, "komponen": "NASABAH", "sub": "NASABAH BARU AGEN", "bobot": 2.5, "target_bln": 99.0, "target_thn": 108.0, "realisasi": 120.0, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 9, "komponen": "NASABAH", "sub": "NASABAH PEMBIAYAAN TAHUNAN", "bobot": 5.0, "target_bln": 3847.0, "target_thn": 4067.0, "realisasi": 3424.0, "ach_bln": 89.0, "nilai_bln": 4.45, "ach_thn": 84.19, "nilai_thn": 4.21}, {"no": 10, "komponen": "NASABAH", "sub": "NASABAH TABUNGAN EMAS", "bobot": 5.0, "target_bln": 231.0, "target_thn": 237.0, "realisasi": 226.0, "ach_bln": 97.84, "nilai_bln": 4.89, "ach_thn": 95.36, "nilai_thn": 4.77}, {"no": 11, "komponen": "KUALITAS KREDIT", "sub": "NPL GADAI", "bobot": 3.0, "target_bln": 0.25, "target_thn": 0.3, "realisasi": 0.11, "ach_bln": 110.0, "nilai_bln": 3.3, "ach_thn": 110.0, "nilai_thn": 3.3}, {"no": 12, "komponen": "KUALITAS KREDIT", "sub": "NPL NON GADAI", "bobot": 2.0, "target_bln": 5.79, "target_thn": 5.68, "realisasi": 12.95, "ach_bln": 44.71, "nilai_bln": 0.89, "ach_thn": 43.86, "nilai_thn": 0.88}, {"no": 13, "komponen": "KUALITAS KREDIT", "sub": "NPL EMAS", "bobot": 2.5, "target_bln": 1.13, "target_thn": 1.12, "realisasi": 0.0, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 14, "komponen": "KUALITAS KREDIT", "sub": "LAR GADAI", "bobot": 3.0, "target_bln": 2.89, "target_thn": 2.89, "realisasi": 4.63, "ach_bln": 62.42, "nilai_bln": 1.87, "ach_thn": 62.42, "nilai_thn": 1.87}, {"no": 15, "komponen": "KUALITAS KREDIT", "sub": "LAR NON GADAI", "bobot": 2.0, "target_bln": 25.28, "target_thn": 24.49, "realisasi": 19.14, "ach_bln": 110.0, "nilai_bln": 2.2, "ach_thn": 110.0, "nilai_thn": 2.2}, {"no": 16, "komponen": "KUALITAS KREDIT", "sub": "LAR EMAS", "bobot": 2.5, "target_bln": 14.22, "target_thn": 14.22, "realisasi": 12.09, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 17, "komponen": "REVAMP PEGADAIAN BRAND", "sub": "BRAND AWARENESS", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": null, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 18, "komponen": "GOLD ECOSYSTEM", "sub": "DEPOSITO EMAS", "bobot": 2.5, "target_bln": 511.0, "target_thn": 520.0, "realisasi": 318.0, "ach_bln": 62.23, "nilai_bln": 1.56, "ach_thn": 61.15, "nilai_thn": 1.53}, {"no": 19, "komponen": "GOLD ECOSYSTEM", "sub": "TABUNGAN EMAS", "bobot": 2.5, "target_bln": 1763.0, "target_thn": 1801.0, "realisasi": 1547.9598, "ach_bln": 87.8, "nilai_bln": 2.2, "ach_thn": 85.95, "nilai_thn": 2.15}, {"no": 20, "komponen": "GOLD ECOSYSTEM", "sub": "GRAMASI PRODUK GALERI 24", "bobot": 5.0, "target_bln": 3369.0, "target_thn": 3687.0, "realisasi": 1314.0, "ach_bln": 39.0, "nilai_bln": 1.95, "ach_thn": 35.64, "nilai_thn": 1.78}, {"no": 21, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "NASABAH TRING!", "bobot": 5.0, "target_bln": 1313.0, "target_thn": 1438.0, "realisasi": 1188.0, "ach_bln": 90.48, "nilai_bln": 4.52, "ach_thn": 82.61, "nilai_thn": 4.13}, {"no": 22, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "OSL LAYANAN TRING!", "bobot": 5.0, "target_bln": 651847783.0, "target_thn": 687851136.0, "realisasi": 735316813.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 106.9, "nilai_thn": 5.35}, {"no": 23, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "FREKUENSI TRANSAKSI TRING!", "bobot": 5.0, "target_bln": 9662.0, "target_thn": 10583.0, "realisasi": 9665.0, "ach_bln": 100.03, "nilai_bln": 5.0, "ach_thn": 91.33, "nilai_thn": 4.57}, {"no": 24, "komponen": "SINERGI HOLDING UMI", "sub": "CASHLESS DISBURSEMENT", "bobot": 2.0, "target_bln": 77.37, "target_thn": 77.37, "realisasi": 75.88, "ach_bln": 98.07, "nilai_bln": 1.96, "ach_thn": 98.07, "nilai_thn": 1.96}, {"no": 25, "komponen": "SINERGI HOLDING UMI", "sub": "OSL SINERGI HOLDING", "bobot": 1.5, "target_bln": 85991852.0, "target_thn": 114798600.0, "realisasi": 88338349.0, "ach_bln": 102.73, "nilai_bln": 1.54, "ach_thn": 76.95, "nilai_thn": 1.15}, {"no": 26, "komponen": "SINERGI HOLDING UMI", "sub": "TE SINERGI HOLDING", "bobot": 1.5, "target_bln": 414.0, "target_thn": 436.0, "realisasi": 160.5673, "ach_bln": 38.78, "nilai_bln": 0.58, "ach_thn": 36.83, "nilai_thn": 0.55}, {"no": 27, "komponen": "KPI STRETCH GOAL", "sub": "KPI STRETCH GOAL", "bobot": null, "target_bln": 3790039166.0, "target_thn": 3881188089.0, "realisasi": 2523300879.0, "ach_bln": 66.58, "nilai_bln": 0.0, "ach_thn": 65.01, "nilai_thn": 0.0}]}, {"id": "upc_pasar_wates", "name": "UPC Pasar Wates", "short": "Pasar Wates", "code": "13312", "type": "UPC", "filename": "KPI_18-Nov-26_UPC_UPC PASAR WATES_13312.xlsx", "total_bobot": 100.0, "total_nilai_bln": 89.98, "total_nilai_thn": 88.55, "cir": 8.31, "laba_real": 6958161786.8686, "laba_target_bln": 5461464638.0, "osl_gross_real": 38135434398.0, "osl_gross_target": 55769780540.0, "osl_gadai_real": 45249843368.0, "osl_gadai_ach": 100.39, "stretch_ach": 42.36, "components": {"OUTSTANDING LOAN": {"bobot": 27.5, "nilai_bln": 24.57, "nilai_thn": 24.35, "items": 4, "ach_weighted_bln": 89.35}, "LABA USAHA": {"bobot": 10.0, "nilai_bln": 11.0, "nilai_thn": 11.0, "items": 1, "ach_weighted_bln": 110.0}, "CIR": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "NASABAH": {"bobot": 17.5, "nilai_bln": 18.58, "nilai_thn": 18.32, "items": 4, "ach_weighted_bln": 106.17}, "KUALITAS KREDIT": {"bobot": 15.0, "nilai_bln": 14.24, "nilai_thn": 14.25, "items": 6, "ach_weighted_bln": 94.93}, "REVAMP PEGADAIAN BRAND": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "GOLD ECOSYSTEM": {"bobot": 10.0, "nilai_bln": 5.95, "nilai_thn": 5.67, "items": 3, "ach_weighted_bln": 59.5}, "PEGADAIAN DIGITAL TRING!": {"bobot": 15.0, "nilai_bln": 11.43, "nilai_thn": 10.97, "items": 3, "ach_weighted_bln": 76.2}, "SINERGI HOLDING UMI": {"bobot": 5.0, "nilai_bln": 4.21, "nilai_thn": 3.99, "items": 3, "ach_weighted_bln": 84.2}, "KPI STRETCH GOAL": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}}, "rows": [{"no": 1, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA GADAI", "bobot": 10.0, "target_bln": 45074375080.0, "target_thn": 45334116093.0, "realisasi": 45249843368.0, "ach_bln": 100.39, "nilai_bln": 10.04, "ach_thn": 99.81, "nilai_thn": 9.98}, {"no": 2, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA NON GADAI", "bobot": 5.0, "target_bln": 2804420740.0, "target_thn": 2820941173.0, "realisasi": 2633432925.0, "ach_bln": 93.9, "nilai_bln": 4.7, "ach_thn": 93.35, "nilai_thn": 4.67}, {"no": 3, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA EMAS", "bobot": 7.5, "target_bln": 4075676568.0, "target_thn": 4133695916.0, "realisasi": 3481649600.0, "ach_bln": 85.43, "nilai_bln": 6.41, "ach_thn": 84.23, "nilai_thn": 6.32}, {"no": 4, "komponen": "OUTSTANDING LOAN", "sub": "OSL GROSS POSISI", "bobot": 5.0, "target_bln": 55769780540.0, "target_thn": 56416341480.0, "realisasi": 38135434398.0, "ach_bln": 68.38, "nilai_bln": 3.42, "ach_thn": 67.6, "nilai_thn": 3.38}, {"no": 5, "komponen": "LABA USAHA", "sub": "LABA USAHA", "bobot": 10.0, "target_bln": 5461464638.0, "target_thn": 5997507298.0, "realisasi": 6958161786.8686, "ach_bln": 110.0, "nilai_bln": 11.0, "ach_thn": 110.0, "nilai_thn": 11.0}, {"no": 6, "komponen": "CIR", "sub": "CIR", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": 8.31, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 7, "komponen": "NASABAH", "sub": "NASABAH BARU", "bobot": 5.0, "target_bln": 1115.0, "target_thn": 1230.0, "realisasi": 1945.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 110.0, "nilai_thn": 5.5}, {"no": 8, "komponen": "NASABAH", "sub": "NASABAH BARU AGEN", "bobot": 2.5, "target_bln": 99.0, "target_thn": 108.0, "realisasi": 131.0, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 9, "komponen": "NASABAH", "sub": "NASABAH PEMBIAYAAN TAHUNAN", "bobot": 5.0, "target_bln": 4250.0, "target_thn": 4497.0, "realisasi": 4108.0, "ach_bln": 96.66, "nilai_bln": 4.83, "ach_thn": 91.35, "nilai_thn": 4.57}, {"no": 10, "komponen": "NASABAH", "sub": "NASABAH TABUNGAN EMAS", "bobot": 5.0, "target_bln": 137.0, "target_thn": 140.0, "realisasi": 173.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 110.0, "nilai_thn": 5.5}, {"no": 11, "komponen": "KUALITAS KREDIT", "sub": "NPL GADAI", "bobot": 3.0, "target_bln": 0.26, "target_thn": 0.31, "realisasi": 0.15, "ach_bln": 110.0, "nilai_bln": 3.3, "ach_thn": 110.0, "nilai_thn": 3.3}, {"no": 12, "komponen": "KUALITAS KREDIT", "sub": "NPL NON GADAI", "bobot": 2.0, "target_bln": 4.69, "target_thn": 4.57, "realisasi": 1.1, "ach_bln": 110.0, "nilai_bln": 2.2, "ach_thn": 110.0, "nilai_thn": 2.2}, {"no": 13, "komponen": "KUALITAS KREDIT", "sub": "NPL EMAS", "bobot": 2.5, "target_bln": 1.13, "target_thn": 1.12, "realisasi": 0.75, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 14, "komponen": "KUALITAS KREDIT", "sub": "LAR GADAI", "bobot": 3.0, "target_bln": 2.81, "target_thn": 2.82, "realisasi": 7.3, "ach_bln": 38.49, "nilai_bln": 1.15, "ach_thn": 38.63, "nilai_thn": 1.16}, {"no": 15, "komponen": "KUALITAS KREDIT", "sub": "LAR NON GADAI", "bobot": 2.0, "target_bln": 22.56, "target_thn": 21.82, "realisasi": 3.45, "ach_bln": 110.0, "nilai_bln": 2.2, "ach_thn": 110.0, "nilai_thn": 2.2}, {"no": 16, "komponen": "KUALITAS KREDIT", "sub": "LAR EMAS", "bobot": 2.5, "target_bln": 14.16, "target_thn": 14.16, "realisasi": 13.41, "ach_bln": 105.59, "nilai_bln": 2.64, "ach_thn": 105.59, "nilai_thn": 2.64}, {"no": 17, "komponen": "REVAMP PEGADAIAN BRAND", "sub": "BRAND AWARENESS", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": null, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 18, "komponen": "GOLD ECOSYSTEM", "sub": "DEPOSITO EMAS", "bobot": 2.5, "target_bln": 489.0, "target_thn": 497.0, "realisasi": 275.0, "ach_bln": 56.24, "nilai_bln": 1.41, "ach_thn": 55.33, "nilai_thn": 1.38}, {"no": 19, "komponen": "GOLD ECOSYSTEM", "sub": "TABUNGAN EMAS", "bobot": 2.5, "target_bln": 1044.0, "target_thn": 1066.0, "realisasi": 881.3953, "ach_bln": 84.42, "nilai_bln": 2.11, "ach_thn": 82.68, "nilai_thn": 2.07}, {"no": 20, "komponen": "GOLD ECOSYSTEM", "sub": "GRAMASI PRODUK GALERI 24", "bobot": 5.0, "target_bln": 4104.0, "target_thn": 4491.0, "realisasi": 1994.5, "ach_bln": 48.6, "nilai_bln": 2.43, "ach_thn": 44.41, "nilai_thn": 2.22}, {"no": 21, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "NASABAH TRING!", "bobot": 5.0, "target_bln": 1936.0, "target_thn": 2121.0, "realisasi": 1109.0, "ach_bln": 57.28, "nilai_bln": 2.86, "ach_thn": 52.29, "nilai_thn": 2.61}, {"no": 22, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "OSL LAYANAN TRING!", "bobot": 5.0, "target_bln": 594344118.0, "target_thn": 627171384.0, "realisasi": 364762941.0, "ach_bln": 61.37, "nilai_bln": 3.07, "ach_thn": 58.16, "nilai_thn": 2.91}, {"no": 23, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "FREKUENSI TRANSAKSI TRING!", "bobot": 5.0, "target_bln": 8284.0, "target_thn": 9073.0, "realisasi": 9891.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 109.02, "nilai_thn": 5.45}, {"no": 24, "komponen": "SINERGI HOLDING UMI", "sub": "CASHLESS DISBURSEMENT", "bobot": 2.0, "target_bln": 77.37, "target_thn": 77.37, "realisasi": 73.15, "ach_bln": 94.55, "nilai_bln": 1.89, "ach_thn": 94.55, "nilai_thn": 1.89}, {"no": 25, "komponen": "SINERGI HOLDING UMI", "sub": "OSL SINERGI HOLDING", "bobot": 1.5, "target_bln": 85991852.0, "target_thn": 114798600.0, "realisasi": 112772085.0, "ach_bln": 110.0, "nilai_bln": 1.65, "ach_thn": 98.23, "nilai_thn": 1.47}, {"no": 26, "komponen": "SINERGI HOLDING UMI", "sub": "TE SINERGI HOLDING", "bobot": 1.5, "target_bln": 414.0, "target_thn": 436.0, "realisasi": 183.6678, "ach_bln": 44.36, "nilai_bln": 0.67, "ach_thn": 42.13, "nilai_thn": 0.63}, {"no": 27, "komponen": "KPI STRETCH GOAL", "sub": "KPI STRETCH GOAL", "bobot": null, "target_bln": 4184700454.0, "target_thn": 4286541764.0, "realisasi": 1772586610.0, "ach_bln": 42.36, "nilai_bln": 0.0, "ach_thn": 41.35, "nilai_thn": 0.0}]}, {"id": "upc_ciasem", "name": "UPC Ciasem", "short": "Ciasem", "code": "13314", "type": "UPC", "filename": "KPI_18-Nov-26_UPC_UPC CIASEM_13314.xlsx", "total_bobot": 100.0, "total_nilai_bln": 88.1, "total_nilai_thn": 86.93, "cir": 11.57, "laba_real": 4078227335.4701, "laba_target_bln": 2040387420.0, "osl_gross_real": 29616119187.0, "osl_gross_target": 39222872038.0, "osl_gadai_real": 29064341194.0, "osl_gadai_ach": 88.25, "stretch_ach": 122.88, "components": {"OUTSTANDING LOAN": {"bobot": 27.5, "nilai_bln": 24.76, "nilai_thn": 24.5, "items": 4, "ach_weighted_bln": 90.04}, "LABA USAHA": {"bobot": 10.0, "nilai_bln": 11.0, "nilai_thn": 11.0, "items": 1, "ach_weighted_bln": 110.0}, "CIR": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "NASABAH": {"bobot": 17.5, "nilai_bln": 17.86, "nilai_thn": 17.47, "items": 4, "ach_weighted_bln": 102.06}, "KUALITAS KREDIT": {"bobot": 15.0, "nilai_bln": 10.72, "nilai_thn": 10.66, "items": 6, "ach_weighted_bln": 71.47}, "REVAMP PEGADAIAN BRAND": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "GOLD ECOSYSTEM": {"bobot": 10.0, "nilai_bln": 4.54, "nilai_thn": 4.33, "items": 3, "ach_weighted_bln": 45.4}, "PEGADAIAN DIGITAL TRING!": {"bobot": 15.0, "nilai_bln": 15.26, "nilai_thn": 15.04, "items": 3, "ach_weighted_bln": 101.73}, "SINERGI HOLDING UMI": {"bobot": 5.0, "nilai_bln": 3.96, "nilai_thn": 3.93, "items": 3, "ach_weighted_bln": 79.2}, "KPI STRETCH GOAL": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}}, "rows": [{"no": 1, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA GADAI", "bobot": 10.0, "target_bln": 32932742936.0, "target_thn": 33122039610.0, "realisasi": 29064341194.0, "ach_bln": 88.25, "nilai_bln": 8.83, "ach_thn": 87.75, "nilai_thn": 8.77}, {"no": 2, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA NON GADAI", "bobot": 5.0, "target_bln": 1315423055.0, "target_thn": 1321336605.0, "realisasi": 631500764.0, "ach_bln": 48.01, "nilai_bln": 2.4, "ach_thn": 47.79, "nilai_thn": 2.39}, {"no": 3, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA EMAS", "bobot": 7.5, "target_bln": 2600806844.0, "target_thn": 2640169914.0, "realisasi": 3381894761.0, "ach_bln": 130.03, "nilai_bln": 9.75, "ach_thn": 128.09, "nilai_thn": 9.61}, {"no": 4, "komponen": "OUTSTANDING LOAN", "sub": "OSL GROSS POSISI", "bobot": 5.0, "target_bln": 39222872038.0, "target_thn": 39650197015.0, "realisasi": 29616119187.0, "ach_bln": 75.51, "nilai_bln": 3.78, "ach_thn": 74.69, "nilai_thn": 3.73}, {"no": 5, "komponen": "LABA USAHA", "sub": "LABA USAHA", "bobot": 10.0, "target_bln": 2040387420.0, "target_thn": 2241505938.0, "realisasi": 4078227335.4701, "ach_bln": 110.0, "nilai_bln": 11.0, "ach_thn": 110.0, "nilai_thn": 11.0}, {"no": 6, "komponen": "CIR", "sub": "CIR", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": 11.57, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 7, "komponen": "NASABAH", "sub": "NASABAH BARU", "bobot": 5.0, "target_bln": 1273.0, "target_thn": 1404.0, "realisasi": 1754.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 110.0, "nilai_thn": 5.5}, {"no": 8, "komponen": "NASABAH", "sub": "NASABAH BARU AGEN", "bobot": 2.5, "target_bln": 99.0, "target_thn": 108.0, "realisasi": 119.0, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 9, "komponen": "NASABAH", "sub": "NASABAH PEMBIAYAAN TAHUNAN", "bobot": 5.0, "target_bln": 2848.0, "target_thn": 3012.0, "realisasi": 2532.0, "ach_bln": 88.9, "nilai_bln": 4.45, "ach_thn": 84.06, "nilai_thn": 4.2}, {"no": 10, "komponen": "NASABAH", "sub": "NASABAH TABUNGAN EMAS", "bobot": 5.0, "target_bln": 224.0, "target_thn": 230.0, "realisasi": 231.0, "ach_bln": 103.13, "nilai_bln": 5.16, "ach_thn": 100.43, "nilai_thn": 5.02}, {"no": 11, "komponen": "KUALITAS KREDIT", "sub": "NPL GADAI", "bobot": 3.0, "target_bln": 0.26, "target_thn": 0.3, "realisasi": 0.09, "ach_bln": 110.0, "nilai_bln": 3.3, "ach_thn": 110.0, "nilai_thn": 3.3}, {"no": 12, "komponen": "KUALITAS KREDIT", "sub": "NPL NON GADAI", "bobot": 2.0, "target_bln": 5.43, "target_thn": 5.33, "realisasi": 23.88, "ach_bln": 22.74, "nilai_bln": 0.45, "ach_thn": 22.32, "nilai_thn": 0.45}, {"no": 13, "komponen": "KUALITAS KREDIT", "sub": "NPL EMAS", "bobot": 2.5, "target_bln": 1.04, "target_thn": 1.05, "realisasi": 0.0, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 14, "komponen": "KUALITAS KREDIT", "sub": "LAR GADAI", "bobot": 3.0, "target_bln": 3.13, "target_thn": 3.13, "realisasi": 8.59, "ach_bln": 36.44, "nilai_bln": 1.09, "ach_thn": 36.44, "nilai_thn": 1.09}, {"no": 15, "komponen": "KUALITAS KREDIT", "sub": "LAR NON GADAI", "bobot": 2.0, "target_bln": 24.22, "target_thn": 23.44, "realisasi": 24.95, "ach_bln": 97.07, "nilai_bln": 1.94, "ach_thn": 93.95, "nilai_thn": 1.88}, {"no": 16, "komponen": "KUALITAS KREDIT", "sub": "LAR EMAS", "bobot": 2.5, "target_bln": 12.67, "target_thn": 12.68, "realisasi": 26.62, "ach_bln": 47.6, "nilai_bln": 1.19, "ach_thn": 47.63, "nilai_thn": 1.19}, {"no": 17, "komponen": "REVAMP PEGADAIAN BRAND", "sub": "BRAND AWARENESS", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": null, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 18, "komponen": "GOLD ECOSYSTEM", "sub": "DEPOSITO EMAS", "bobot": 2.5, "target_bln": 514.0, "target_thn": 523.0, "realisasi": 162.0, "ach_bln": 31.52, "nilai_bln": 0.79, "ach_thn": 30.98, "nilai_thn": 0.77}, {"no": 19, "komponen": "GOLD ECOSYSTEM", "sub": "TABUNGAN EMAS", "bobot": 2.5, "target_bln": 1709.0, "target_thn": 1746.0, "realisasi": 1225.725, "ach_bln": 71.72, "nilai_bln": 1.79, "ach_thn": 70.2, "nilai_thn": 1.76}, {"no": 20, "komponen": "GOLD ECOSYSTEM", "sub": "GRAMASI PRODUK GALERI 24", "bobot": 5.0, "target_bln": 3619.0, "target_thn": 3961.0, "realisasi": 1422.0, "ach_bln": 39.29, "nilai_bln": 1.96, "ach_thn": 35.9, "nilai_thn": 1.8}, {"no": 21, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "NASABAH TRING!", "bobot": 5.0, "target_bln": 951.0, "target_thn": 1042.0, "realisasi": 1197.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 110.0, "nilai_thn": 5.5}, {"no": 22, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "OSL LAYANAN TRING!", "bobot": 5.0, "target_bln": 705382602.0, "target_thn": 744342830.0, "realisasi": 601179747.0, "ach_bln": 85.23, "nilai_bln": 4.26, "ach_thn": 80.77, "nilai_thn": 4.04}, {"no": 23, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "FREKUENSI TRANSAKSI TRING!", "bobot": 5.0, "target_bln": 10310.0, "target_thn": 11293.0, "realisasi": 12773.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 110.0, "nilai_thn": 5.5}, {"no": 24, "komponen": "SINERGI HOLDING UMI", "sub": "CASHLESS DISBURSEMENT", "bobot": 2.0, "target_bln": 77.37, "target_thn": 77.37, "realisasi": 66.6, "ach_bln": 86.08, "nilai_bln": 1.72, "ach_thn": 86.08, "nilai_thn": 1.72}, {"no": 25, "komponen": "SINERGI HOLDING UMI", "sub": "OSL SINERGI HOLDING", "bobot": 1.5, "target_bln": 85991852.0, "target_thn": 114798600.0, "realisasi": 127238521.0, "ach_bln": 110.0, "nilai_bln": 1.65, "ach_thn": 110.0, "nilai_thn": 1.65}, {"no": 26, "komponen": "SINERGI HOLDING UMI", "sub": "TE SINERGI HOLDING", "bobot": 1.5, "target_bln": 414.0, "target_thn": 436.0, "realisasi": 161.5625, "ach_bln": 39.02, "nilai_bln": 0.59, "ach_thn": 37.06, "nilai_thn": 0.56}, {"no": 27, "komponen": "KPI STRETCH GOAL", "sub": "KPI STRETCH GOAL", "bobot": null, "target_bln": 2292798808.0, "target_thn": 2352788545.0, "realisasi": 2817409416.0, "ach_bln": 122.88, "nilai_bln": 0.0, "ach_thn": 119.75, "nilai_thn": 0.0}]}, {"id": "upc_rancasari", "name": "UPC Rancasari", "short": "Rancasari", "code": "13313", "type": "UPC", "filename": "KPI_18-Nov-26_UPC_UPC RANCASARI_13313.xlsx", "total_bobot": 100.0, "total_nilai_bln": 83.83, "total_nilai_thn": 81.74, "cir": 17.7, "laba_real": 12251566543.383, "laba_target_bln": 9210141832.0, "osl_gross_real": 48740338503.0, "osl_gross_target": 91750184640.0, "osl_gadai_real": 68215134579.0, "osl_gadai_ach": 109.19, "stretch_ach": 55.57, "components": {"OUTSTANDING LOAN": {"bobot": 27.5, "nilai_bln": 21.72, "nilai_thn": 21.54, "items": 4, "ach_weighted_bln": 78.98}, "LABA USAHA": {"bobot": 10.0, "nilai_bln": 11.0, "nilai_thn": 11.0, "items": 1, "ach_weighted_bln": 110.0}, "CIR": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "NASABAH": {"bobot": 17.5, "nilai_bln": 16.04, "nilai_thn": 15.31, "items": 4, "ach_weighted_bln": 91.66}, "KUALITAS KREDIT": {"bobot": 15.0, "nilai_bln": 9.36, "nilai_thn": 9.64, "items": 6, "ach_weighted_bln": 62.4}, "REVAMP PEGADAIAN BRAND": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}, "GOLD ECOSYSTEM": {"bobot": 10.0, "nilai_bln": 8.01, "nilai_thn": 7.65, "items": 3, "ach_weighted_bln": 80.1}, "PEGADAIAN DIGITAL TRING!": {"bobot": 15.0, "nilai_bln": 13.72, "nilai_thn": 12.65, "items": 3, "ach_weighted_bln": 91.47}, "SINERGI HOLDING UMI": {"bobot": 5.0, "nilai_bln": 3.98, "nilai_thn": 3.95, "items": 3, "ach_weighted_bln": 79.6}, "KPI STRETCH GOAL": {"bobot": 0.0, "nilai_bln": 0.0, "nilai_thn": 0.0, "items": 1, "ach_weighted_bln": null}}, "rows": [{"no": 1, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA GADAI", "bobot": 10.0, "target_bln": 62472155526.0, "target_thn": 62830582898.0, "realisasi": 68215134579.0, "ach_bln": 109.19, "nilai_bln": 10.92, "ach_thn": 108.57, "nilai_thn": 10.86}, {"no": 2, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA NON GADAI", "bobot": 5.0, "target_bln": 1395459337.0, "target_thn": 1402269293.0, "realisasi": 720426794.0, "ach_bln": 51.63, "nilai_bln": 2.58, "ach_thn": 51.38, "nilai_thn": 2.57}, {"no": 3, "komponen": "OUTSTANDING LOAN", "sub": "OSL AKTIF RATA-RATA EMAS", "bobot": 7.5, "target_bln": 20531166087.0, "target_thn": 20810208856.0, "realisasi": 15224898631.0, "ach_bln": 74.16, "nilai_bln": 5.56, "ach_thn": 73.16, "nilai_thn": 5.49}, {"no": 4, "komponen": "OUTSTANDING LOAN", "sub": "OSL GROSS POSISI", "bobot": 5.0, "target_bln": 91750184640.0, "target_thn": 93007557182.0, "realisasi": 48740338503.0, "ach_bln": 53.12, "nilai_bln": 2.66, "ach_thn": 52.4, "nilai_thn": 2.62}, {"no": 5, "komponen": "LABA USAHA", "sub": "LABA USAHA", "bobot": 10.0, "target_bln": 9210141832.0, "target_thn": 10126288024.0, "realisasi": 12251566543.383, "ach_bln": 110.0, "nilai_bln": 11.0, "ach_thn": 110.0, "nilai_thn": 11.0}, {"no": 6, "komponen": "CIR", "sub": "CIR", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": 17.7, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 7, "komponen": "NASABAH", "sub": "NASABAH BARU", "bobot": 5.0, "target_bln": 1496.0, "target_thn": 1650.0, "realisasi": 1131.0, "ach_bln": 75.6, "nilai_bln": 3.78, "ach_thn": 68.55, "nilai_thn": 3.43}, {"no": 8, "komponen": "NASABAH", "sub": "NASABAH BARU AGEN", "bobot": 2.5, "target_bln": 99.0, "target_thn": 108.0, "realisasi": 184.0, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 9, "komponen": "NASABAH", "sub": "NASABAH PEMBIAYAAN TAHUNAN", "bobot": 5.0, "target_bln": 3472.0, "target_thn": 3675.0, "realisasi": 3389.0, "ach_bln": 97.61, "nilai_bln": 4.88, "ach_thn": 92.22, "nilai_thn": 4.61}, {"no": 10, "komponen": "NASABAH", "sub": "NASABAH TABUNGAN EMAS", "bobot": 5.0, "target_bln": 246.0, "target_thn": 252.0, "realisasi": 228.0, "ach_bln": 92.68, "nilai_bln": 4.63, "ach_thn": 90.48, "nilai_thn": 4.52}, {"no": 11, "komponen": "KUALITAS KREDIT", "sub": "NPL GADAI", "bobot": 3.0, "target_bln": 0.24, "target_thn": 0.29, "realisasi": 0.46, "ach_bln": 52.17, "nilai_bln": 1.57, "ach_thn": 63.04, "nilai_thn": 1.89}, {"no": 12, "komponen": "KUALITAS KREDIT", "sub": "NPL NON GADAI", "bobot": 2.0, "target_bln": 4.66, "target_thn": 4.54, "realisasi": 18.6, "ach_bln": 25.05, "nilai_bln": 0.5, "ach_thn": 24.41, "nilai_thn": 0.49}, {"no": 13, "komponen": "KUALITAS KREDIT", "sub": "NPL EMAS", "bobot": 2.5, "target_bln": 1.19, "target_thn": 1.17, "realisasi": 0.0, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 14, "komponen": "KUALITAS KREDIT", "sub": "LAR GADAI", "bobot": 3.0, "target_bln": 2.74, "target_thn": 2.75, "realisasi": 11.93, "ach_bln": 22.97, "nilai_bln": 0.69, "ach_thn": 23.05, "nilai_thn": 0.69}, {"no": 15, "komponen": "KUALITAS KREDIT", "sub": "LAR NON GADAI", "bobot": 2.0, "target_bln": 23.76, "target_thn": 23.12, "realisasi": 43.08, "ach_bln": 55.15, "nilai_bln": 1.1, "ach_thn": 53.67, "nilai_thn": 1.07}, {"no": 16, "komponen": "KUALITAS KREDIT", "sub": "LAR EMAS", "bobot": 2.5, "target_bln": 15.33, "target_thn": 15.34, "realisasi": 6.43, "ach_bln": 110.0, "nilai_bln": 2.75, "ach_thn": 110.0, "nilai_thn": 2.75}, {"no": 17, "komponen": "REVAMP PEGADAIAN BRAND", "sub": "BRAND AWARENESS", "bobot": null, "target_bln": null, "target_thn": null, "realisasi": null, "ach_bln": 0.0, "nilai_bln": null, "ach_thn": 0.0, "nilai_thn": null}, {"no": 18, "komponen": "GOLD ECOSYSTEM", "sub": "DEPOSITO EMAS", "bobot": 2.5, "target_bln": 585.0, "target_thn": 594.0, "realisasi": 136.0, "ach_bln": 23.25, "nilai_bln": 0.58, "ach_thn": 22.9, "nilai_thn": 0.57}, {"no": 19, "komponen": "GOLD ECOSYSTEM", "sub": "TABUNGAN EMAS", "bobot": 2.5, "target_bln": 1875.0, "target_thn": 1916.0, "realisasi": 1443.8997, "ach_bln": 77.01, "nilai_bln": 1.93, "ach_thn": 75.36, "nilai_thn": 1.88}, {"no": 20, "komponen": "GOLD ECOSYSTEM", "sub": "GRAMASI PRODUK GALERI 24", "bobot": 5.0, "target_bln": 10077.0, "target_thn": 11028.0, "realisasi": 11469.0, "ach_bln": 110.0, "nilai_bln": 5.5, "ach_thn": 104.0, "nilai_thn": 5.2}, {"no": 21, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "NASABAH TRING!", "bobot": 5.0, "target_bln": 962.0, "target_thn": 1054.0, "realisasi": 959.0, "ach_bln": 99.69, "nilai_bln": 4.98, "ach_thn": 90.99, "nilai_thn": 4.55}, {"no": 22, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "OSL LAYANAN TRING!", "bobot": 5.0, "target_bln": 955052671.0, "target_thn": 1007802867.0, "realisasi": 646744024.0, "ach_bln": 67.72, "nilai_bln": 3.39, "ach_thn": 64.17, "nilai_thn": 3.21}, {"no": 23, "komponen": "PEGADAIAN DIGITAL TRING!", "sub": "FREKUENSI TRANSAKSI TRING!", "bobot": 5.0, "target_bln": 7921.0, "target_thn": 8676.0, "realisasi": 8479.0, "ach_bln": 107.04, "nilai_bln": 5.35, "ach_thn": 97.73, "nilai_thn": 4.89}, {"no": 24, "komponen": "SINERGI HOLDING UMI", "sub": "CASHLESS DISBURSEMENT", "bobot": 2.0, "target_bln": 77.37, "target_thn": 77.37, "realisasi": 67.96, "ach_bln": 87.84, "nilai_bln": 1.76, "ach_thn": 87.84, "nilai_thn": 1.76}, {"no": 25, "komponen": "SINERGI HOLDING UMI", "sub": "OSL SINERGI HOLDING", "bobot": 1.5, "target_bln": 85991852.0, "target_thn": 114798600.0, "realisasi": 151441885.0, "ach_bln": 110.0, "nilai_bln": 1.65, "ach_thn": 110.0, "nilai_thn": 1.65}, {"no": 26, "komponen": "SINERGI HOLDING UMI", "sub": "TE SINERGI HOLDING", "bobot": 1.5, "target_bln": 414.0, "target_thn": 436.0, "realisasi": 156.2163, "ach_bln": 37.73, "nilai_bln": 0.57, "ach_thn": 35.83, "nilai_thn": 0.54}, {"no": 27, "komponen": "KPI STRETCH GOAL", "sub": "KPI STRETCH GOAL", "bobot": null, "target_bln": 23364348300.0, "target_thn": 23911827324.0, "realisasi": 12983284152.0, "ach_bln": 55.57, "nilai_bln": 0.0, "ach_thn": 54.3, "nilai_thn": 0.0}]}];
+
+    const state = {
+      units: JSON.parse(JSON.stringify(INITIAL_DATA)),
+      activeUnitId: 'cp_konsolidasi',
+      period: 'bln', // 'bln' | 'thn'
+      activeTab: 'overview',
+      searchQuery: '',
+      componentFilter: 'ALL',
+      statusFilter: 'ALL',
+      charts: { units: null, components: null }
+    };
+
+    // Formatters
+    const CURRENCY_SUBS = new Set([
+      'OSL AKTIF RATA-RATA GADAI', 'OSL AKTIF RATA-RATA NON GADAI',
+      'OSL AKTIF RATA-RATA EMAS', 'OSL GROSS POSISI', 'LABA USAHA',
+      'OSL LAYANAN TRING!', 'OSL SINERGI HOLDING', 'KPI STRETCH GOAL'
+    ]);
+    const PERCENT_SUBS = new Set([
+      'CIR', 'NPL GADAI', 'NPL NON GADAI', 'NPL EMAS',
+      'LAR GADAI', 'LAR NON GADAI', 'LAR EMAS', 'CASHLESS DISBURSEMENT'
+    ]);
+    const GRAM_SUBS = new Set([
+      'DEPOSITO EMAS', 'TABUNGAN EMAS', 'GRAMASI PRODUK GALERI 24', 'TE SINERGI HOLDING'
+    ]);
+
+    function fmtNum(val, dec = 2) {
+      if (val === null || val === undefined || isNaN(val)) return '—';
+      return Number(val).toLocaleString('id-ID', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    }
+
+    function fmtRpShort(val) {
+      if (val === null || val === undefined || isNaN(val)) return '—';
+      const abs = Math.abs(val);
+      if (abs >= 1e9) return 'Rp ' + fmtNum(val / 1e9, 2) + ' M';
+      if (abs >= 1e6) return 'Rp ' + fmtNum(val / 1e6, 2) + ' Jt';
+      return 'Rp ' + fmtNum(val, 0);
+    }
+
+    function fmtValueBySub(sub, val) {
+      if (val === null || val === undefined || isNaN(val)) return '—';
+      if (CURRENCY_SUBS.has(sub)) return fmtRpShort(val);
+      if (PERCENT_SUBS.has(sub)) return fmtNum(val, 2) + '%';
+      if (GRAM_SUBS.has(sub)) return fmtNum(val, val % 1 === 0 ? 0 : 2) + ' gr';
+      return fmtNum(val, 0);
+    }
+
+    function getStatusInfo(ach) {
+      if (ach === null || ach === undefined) return { label: 'Info', color: 'slate', bar: 'bg-slate-300', badge: 'bg-slate-100 text-slate-600' };
+      if (ach >= 100) return { label: 'Tercapai', color: 'emerald', bar: 'bg-emerald-500', badge: 'bg-emerald-100 text-emerald-800' };
+      if (ach >= 90) return { label: 'Baik', color: 'teal', bar: 'bg-teal-500', badge: 'bg-teal-100 text-teal-800' };
+      if (ach >= 70) return { label: 'Waspada', color: 'amber', bar: 'bg-amber-500', badge: 'bg-amber-100 text-amber-800' };
+      return { label: 'Kritis', color: 'rose', bar: 'bg-rose-500', badge: 'bg-rose-100 text-rose-800' };
+    }
+
+    function getUnitScore(u) {
+      return state.period === 'bln' ? u.total_nilai_bln : u.total_nilai_thn;
+    }
+
+    function getActiveUnit() {
+      return state.units.find(u => u.id === state.activeUnitId) || state.units[0];
+    }
+
+    function showToast(msg, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const bg = type === 'error' ? 'bg-rose-700' : 'bg-emerald-800';
+      toast.className = `${bg} text-white text-xs sm:text-sm font-medium px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 transition-opacity duration-300`;
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    // Render Unit Pills
+    function renderUnitPills() {
+      const container = document.getElementById('unit-pills');
+      const active = getActiveUnit();
+      document.getElementById('active-unit-subtitle').textContent = `${active.name} (${active.type})`;
+
+      container.innerHTML = state.units.map(u => {
+        const isActive = u.id === state.activeUnitId;
+        const score = getUnitScore(u);
+        const pillClass = isActive
+          ? 'bg-amber-400 text-slate-900 border-amber-300 shadow-md ring-2 ring-amber-200/50'
+          : 'bg-white/10 hover:bg-white/20 text-white border-white/15';
+        const scoreBadge = isActive
+          ? 'bg-slate-900/15 text-slate-900'
+          : (score >= 90 ? 'bg-emerald-400/25 text-emerald-100' : 'bg-rose-400/30 text-rose-100');
+        return `
+          <button type="button" data-unit-id="${u.id}" class="unit-pill-btn shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold transition ${pillClass}">
+            <span>${u.short}</span>
+            <span class="px-1.5 py-0.5 rounded-md text-[11px] font-bold ${scoreBadge}">${fmtNum(score, 2)}</span>
+          </button>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.unit-pill-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeUnitId = btn.dataset.unitId;
+          renderAll();
+        });
+      });
+    }
+
+    // Render Hero Cards
+    function renderHeroCards() {
+      const u = getActiveUnit();
+      const score = getUnitScore(u);
+      const isBln = state.period === 'bln';
+      const labaRow = u.rows.find(r => r.sub === 'LABA USAHA');
+      const oslRow = u.rows.find(r => r.sub === 'OSL GROSS POSISI');
+      const stretchRow = u.rows.find(r => r.sub === 'KPI STRETCH GOAL');
+      const redCount = u.rows.filter(r => r.bobot > 0 && (isBln ? r.ach_bln : r.ach_thn) !== null && (isBln ? r.ach_bln : r.ach_thn) < 70).length;
+
+      const scoreLabel = score >= 95 ? 'Sangat Baik' : score >= 90 ? 'Baik (On Track)' : score >= 85 ? 'Perlu Dorongan' : 'Prioritas Pembinaan';
+      const scoreColor = score >= 90 ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : score >= 85 ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-rose-700 bg-rose-50 border-rose-200';
+
+      const labaTarget = labaRow ? (isBln ? labaRow.target_bln : labaRow.target_thn) : null;
+      const labaAch = labaRow ? (isBln ? labaRow.ach_bln : labaRow.ach_thn) : null;
+      const oslTarget = oslRow ? (isBln ? oslRow.target_bln : oslRow.target_thn) : null;
+      const oslAch = oslRow ? (isBln ? oslRow.ach_bln : oslRow.ach_thn) : null;
+      const stretchAch = stretchRow ? (isBln ? stretchRow.ach_bln : stretchRow.ach_thn) : null;
+
+      document.getElementById('hero-cards').innerHTML = `
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between">
+            <span class="text-xs font-semibold text-slate-500">Total Skor KPI (${isBln ? 'Bulanan' : 'Tahunan'})</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full border ${scoreColor}">${scoreLabel}</span>
+          </div>
+          <div class="mt-3 flex items-baseline gap-2">
+            <span class="text-3xl font-extrabold text-slate-900">${fmtNum(score, 2)}</span>
+            <span class="text-xs font-medium text-slate-400">/ 100</span>
+          </div>
+          <div class="mt-3">
+            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full rounded-full ${score >= 90 ? 'bg-emerald-600' : score >= 85 ? 'bg-amber-500' : 'bg-rose-500'}" style="width:${Math.min(score, 100)}%"></div>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1.5">Zona Merah (&lt;70%): <strong class="${redCount > 0 ? 'text-rose-600' : 'text-emerald-600'}">${redCount} indikator</strong></p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between">
+            <span class="text-xs font-semibold text-slate-500">Laba Usaha</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Ach ${fmtNum(labaAch, 0)}%</span>
+          </div>
+          <div class="mt-3">
+            <span class="text-2xl font-extrabold text-slate-900">${fmtRpShort(u.laba_real)}</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-3">Target ${isBln ? 'Bln' : 'Thn'}: <strong class="text-slate-700">${fmtRpShort(labaTarget)}</strong></p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between">
+            <span class="text-xs font-semibold text-slate-500">OSL Gross Posisi</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${oslAch >= 90 ? 'bg-emerald-100 text-emerald-800' : oslAch >= 70 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'}">Ach ${fmtNum(oslAch, 2)}%</span>
+          </div>
+          <div class="mt-3">
+            <span class="text-2xl font-extrabold text-slate-900">${fmtRpShort(u.osl_gross_real)}</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-3">Target ${isBln ? 'Bln' : 'Thn'}: <strong class="text-slate-700">${fmtRpShort(oslTarget)}</strong></p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-col justify-between">
+          <div class="flex items-start justify-between">
+            <span class="text-xs font-semibold text-slate-500">CIR &amp; Stretch Goal</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Efisiensi</span>
+          </div>
+          <div class="mt-3 flex items-baseline justify-between">
+            <div>
+              <span class="text-[11px] text-slate-400 block">CIR</span>
+              <span class="text-2xl font-extrabold text-slate-900">${fmtNum(u.cir, 2)}%</span>
+            </div>
+            <div class="text-right">
+              <span class="text-[11px] text-slate-400 block">Stretch Goal</span>
+              <span class="text-lg font-extrabold ${stretchAch >= 100 ? 'text-emerald-600' : stretchAch >= 70 ? 'text-amber-600' : 'text-rose-600'}">${fmtNum(stretchAch, 1)}%</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-2">Realisasi Stretch: <strong class="text-slate-700">${fmtRpShort(stretchRow ? stretchRow.realisasi : null)}</strong></p>
+        </div>
+      `;
+    }
+
+    // Render Charts
+    function renderCharts() {
+      const isBln = state.period === 'bln';
+      const u = getActiveUnit();
+
+      document.getElementById('chart-unit-subtitle').textContent = `Skor total ${isBln ? 'Bulanan' : 'Tahunan'} (bobot 100%)`;
+      document.getElementById('chart-comp-title').textContent = `Pencapaian per Komponen — ${u.short}`;
+
+      // Chart 1: Unit Comparison
+      const sortedUnits = [...state.units].sort((a, b) => getUnitScore(b) - getUnitScore(a));
+      const labels1 = sortedUnits.map(x => x.short);
+      const values1 = sortedUnits.map(x => getUnitScore(x));
+      const colors1 = sortedUnits.map(x => {
+        if (x.id === state.activeUnitId) return '#d97706'; // Gold highlight
+        const s = getUnitScore(x);
+        return s >= 90 ? '#059669' : s >= 85 ? '#0d9488' : '#e11d48';
+      });
+
+      if (state.charts.units) state.charts.units.destroy();
+      state.charts.units = new Chart(document.getElementById('chart-units'), {
+        type: 'bar',
+        data: {
+          labels: labels1,
+          datasets: [{
+            label: isBln ? 'Skor Bulanan' : 'Skor Tahunan',
+            data: values1,
+            backgroundColor: colors1,
+            borderRadius: 8,
+            barThickness: 22
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: { label: ctx => `Skor: ${fmtNum(ctx.parsed.x, 2)} / 100` }
+            }
+          },
+          scales: {
+            x: { min: 70, max: 105, grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+            y: { grid: { display: false }, ticks: { font: { size: 11, weight: '600' } } }
+          }
+        }
+      });
+
+      // Chart 2: Component Achievement for Active Unit
+      const weightedComps = Object.entries(u.components)
+        .filter(([_, v]) => v.bobot > 0)
+        .map(([k, v]) => {
+          const nilai = isBln ? v.nilai_bln : v.nilai_thn;
+          const pct = v.bobot > 0 ? Number(((nilai / v.bobot) * 100).toFixed(2)) : 0;
+          const shortName = k
+            .replace('OUTSTANDING LOAN', 'OSL')
+            .replace('PEGADAIAN DIGITAL TRING!', 'Digital TRING!')
+            .replace('SINERGI HOLDING UMI', 'Sinergi UMi')
+            .replace('GOLD ECOSYSTEM', 'Gold Eco')
+            .replace('KUALITAS KREDIT', 'Kualitas Kredit')
+            .replace('LABA USAHA', 'Laba Usaha')
+            .replace('NASABAH', 'Nasabah');
+          return { name: shortName, pct, nilai, bobot: v.bobot };
+        });
+
+      const colors2 = weightedComps.map(c => c.pct >= 95 ? '#059669' : c.pct >= 80 ? '#14b8a6' : c.pct >= 70 ? '#f59e0b' : '#e11d48');
+
+      if (state.charts.components) state.charts.components.destroy();
+      state.charts.components = new Chart(document.getElementById('chart-components'), {
+        type: 'bar',
+        data: {
+          labels: weightedComps.map(c => c.name),
+          datasets: [{
+            label: 'Pencapaian (%)',
+            data: weightedComps.map(c => c.pct),
+            backgroundColor: colors2,
+            borderRadius: 8,
+            maxBarThickness: 36
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const c = weightedComps[ctx.dataIndex];
+                  return `Ach: ${fmtNum(c.pct, 2)}% (Nilai ${fmtNum(c.nilai, 2)} / Bobot ${c.bobot})`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: { beginAtZero: true, max: 115, grid: { color: '#f1f5f9' }, ticks: { callback: v => v + '%', font: { size: 11 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' } } }
+          }
+        }
+      });
+    }
+
+    // Render Leaderboard (6 Outlets)
+    function renderLeaderboard() {
+      const isBln = state.period === 'bln';
+      const outlets = state.units
+        .filter(u => u.id !== 'cp_konsolidasi')
+        .sort((a, b) => getUnitScore(b) - getUnitScore(a));
+
+      const tbody = document.getElementById('leaderboard-body');
+      tbody.innerHTML = outlets.map((u, idx) => {
+        const isSelected = u.id === state.activeUnitId;
+        const redCount = u.rows.filter(r => r.bobot > 0 && (isBln ? r.ach_bln : r.ach_thn) !== null && (isBln ? r.ach_bln : r.ach_thn) < 70).length;
+        const rankBadge = idx === 0
+          ? 'bg-amber-100 text-amber-800 border border-amber-300'
+          : idx === 1 ? 'bg-slate-200 text-slate-800' : idx === 2 ? 'bg-orange-100 text-orange-800' : 'bg-slate-100 text-slate-600';
+
+        return `
+          <tr data-unit-id="${u.id}" class="leaderboard-row cursor-pointer transition ${isSelected ? 'bg-amber-50/80' : 'hover:bg-slate-50'}">
+            <td class="py-3 px-4">
+              <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${rankBadge}">#${idx + 1}</span>
+            </td>
+            <td class="py-3 px-4">
+              <div class="font-bold text-slate-800">${u.name}</div>
+              <div class="text-[11px] text-slate-500">${u.type} • Kode ${u.code || '-'}</div>
+            </td>
+            <td class="py-3 px-4 text-right font-extrabold ${u.total_nilai_bln >= 90 ? 'text-emerald-700' : u.total_nilai_bln >= 85 ? 'text-amber-700' : 'text-rose-700'}">${fmtNum(u.total_nilai_bln, 2)}</td>
+            <td class="py-3 px-4 text-right font-semibold text-slate-700">${fmtNum(u.total_nilai_thn, 2)}</td>
+            <td class="py-3 px-4 text-right text-slate-700">${fmtRpShort(u.laba_real)}</td>
+            <td class="py-3 px-4 text-right text-slate-700">${fmtRpShort(u.osl_gross_real)}</td>
+            <td class="py-3 px-4 text-right text-slate-700">${fmtNum(u.cir, 2)}%</td>
+            <td class="py-3 px-4 text-right font-semibold ${u.stretch_ach >= 100 ? 'text-emerald-700' : 'text-slate-600'}">${fmtNum(u.stretch_ach, 1)}%</td>
+            <td class="py-3 px-4 text-center">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${redCount >= 6 ? 'bg-rose-100 text-rose-800' : redCount >= 4 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
+                ${redCount} KPI
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      tbody.querySelectorAll('.leaderboard-row').forEach(tr => {
+        tr.addEventListener('click', () => {
+          state.activeUnitId = tr.dataset.unitId;
+          renderAll();
+          showToast(`Menampilkan detail ${getActiveUnit().name}`);
+        });
+      });
+    }
+
+    // Render Detail Table
+    function renderTable() {
+      const u = getActiveUnit();
+      const isBln = state.period === 'bln';
+
+      document.getElementById('table-unit-title').textContent = `Rincian 27 Indikator KPI — ${u.name}`;
+      document.getElementById('th-target').textContent = isBln ? 'Target Bulanan' : 'Target Tahunan';
+      document.getElementById('th-ach').textContent = isBln ? 'Pencapaian (Bln)' : 'Pencapaian (Thn)';
+      document.getElementById('th-nilai').textContent = isBln ? 'Nilai KPI (Bln)' : 'Nilai KPI (Thn)';
+
+      // Populate component dropdown if needed
+      const select = document.getElementById('filter-component');
+      const comps = [...new Set(u.rows.map(r => r.komponen))];
+      if (select.options.length <= 1) {
+        comps.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          select.appendChild(opt);
+        });
+      }
+
+      // Highlight status buttons
+      document.querySelectorAll('.status-filter-btn').forEach(btn => {
+        const active = btn.dataset.status === state.statusFilter;
+        btn.className = `status-filter-btn px-2.5 py-1.5 text-xs font-semibold rounded-md transition ${active ? 'bg-emerald-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/60'}`;
+      });
+
+      const q = state.searchQuery.toLowerCase().trim();
+      const filtered = u.rows.filter(r => {
+        if (state.componentFilter !== 'ALL' && r.komponen !== state.componentFilter) return false;
+        if (q && !r.sub.toLowerCase().includes(q) && !r.komponen.toLowerCase().includes(q)) return false;
+        const ach = isBln ? r.ach_bln : r.ach_thn;
+        if (state.statusFilter === 'RED') return r.bobot > 0 && ach !== null && ach < 70;
+        if (state.statusFilter === 'YELLOW') return r.bobot > 0 && ach !== null && ach >= 70 && ach < 90;
+        if (state.statusFilter === 'GREEN') return r.bobot > 0 && ach !== null && ach >= 90;
+        return true;
+      });
+
+      const tbody = document.getElementById('kpi-table-body');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">Tidak ada indikator yang cocok dengan filter.</td></tr>`;
+      } else {
+        tbody.innerHTML = filtered.map(r => {
+          const target = isBln ? r.target_bln : r.target_thn;
+          const ach = isBln ? r.ach_bln : r.ach_thn;
+          const nilai = isBln ? r.nilai_bln : r.nilai_thn;
+          const hasWeight = r.bobot !== null && r.bobot > 0;
+          const st = hasWeight ? getStatusInfo(ach) : getStatusInfo(null);
+          const barW = ach !== null ? Math.min(Math.max(ach, 0), 110) / 110 * 100 : 0;
+
+          return `
+            <tr class="hover:bg-slate-50/90 transition">
+              <td class="py-3 px-3 text-slate-400 font-medium">${r.no}</td>
+              <td class="py-3 px-3">
+                <div class="font-semibold text-slate-800">${r.sub}</div>
+                <div class="text-[11px] text-slate-500">${r.komponen}</div>
+              </td>
+              <td class="py-3 px-3 text-right font-medium text-slate-600">${r.bobot !== null ? fmtNum(r.bobot, 1) + '%' : '—'}</td>
+              <td class="py-3 px-3 text-right text-slate-600">${fmtValueBySub(r.sub, target)}</td>
+              <td class="py-3 px-3 text-right font-semibold text-slate-800">${fmtValueBySub(r.sub, r.realisasi)}</td>
+              <td class="py-3 px-3">
+                ${ach !== null && (hasWeight || r.sub === 'KPI STRETCH GOAL') ? `
+                  <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="font-bold text-slate-800">${fmtNum(ach, 2)}%</span>
+                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${hasWeight ? st.badge : 'bg-indigo-100 text-indigo-800'}">${hasWeight ? st.label : 'Stretch'}</span>
+                  </div>
+                  <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full ${hasWeight ? st.bar : 'bg-indigo-500'}" style="width:${barW}%"></div>
+                  </div>
+                ` : '<span class="text-xs text-slate-400">Non-bobot</span>'}
+              </td>
+              <td class="py-3 px-3 text-right font-extrabold ${hasWeight && ach < 70 ? 'text-rose-600' : 'text-slate-900'}">
+                ${nilai !== null ? fmtNum(nilai, 2) : '—'}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const sumBobot = filtered.reduce((acc, r) => acc + (r.bobot || 0), 0);
+      const sumNilai = filtered.reduce((acc, r) => acc + ((isBln ? r.nilai_bln : r.nilai_thn) || 0), 0);
+      document.getElementById('kpi-table-foot').innerHTML = `
+        <tr>
+          <td colspan="2" class="py-3.5 px-3">TOTAL (${filtered.length} Indikator Ditampilkan)</td>
+          <td class="py-3.5 px-3 text-right">${fmtNum(sumBobot, 1)}%</td>
+          <td colspan="3" class="py-3.5 px-3 text-right text-xs font-medium text-emerald-800">Akumulasi Nilai KPI ${isBln ? 'Bulanan' : 'Tahunan'}</td>
+          <td class="py-3.5 px-3 text-right text-base text-emerald-900">${fmtNum(sumNilai, 2)}</td>
+        </tr>
+      `;
+    }
+
+    // Generate Dynamic Analysis & Recommendations per Unit
+    function renderAnalysis() {
+      const u = getActiveUnit();
+      const isBln = state.period === 'bln';
+      const score = getUnitScore(u);
+      const weightedRows = u.rows.filter(r => r.bobot && r.bobot > 0);
+
+      const strengths = weightedRows
+        .filter(r => (isBln ? r.ach_bln : r.ach_thn) >= 100)
+        .sort((a, b) => (b.bobot || 0) - (a.bobot || 0));
+
+      const redZones = weightedRows
+        .filter(r => (isBln ? r.ach_bln : r.ach_thn) < 70)
+        .sort((a, b) => (isBln ? a.ach_bln : a.ach_thn) - (isBln ? b.ach_bln : b.ach_thn));
+
+      const statusText = score >= 95
+        ? 'berada di level kinerja sangat prima dan melampaui standar cabang.'
+        : score >= 90
+        ? 'berada di zona aman (On Track ≥90), namun masih punya ruang besar untuk tembus 95+ jika kebocoran di zona merah ditutup.'
+        : score >= 85
+        ? 'memerlukan percepatan taktis di beberapa komponen berbobot tinggi agar segera kembali menembus skor 90.'
+        : 'menjadi prioritas utama pembinaan harian cabang karena tekanan berat di kualitas kredit dan ekosistem emas.';
+
+      document.getElementById('analysis-banner').innerHTML = `
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">Diagnosis Eksekutif Unit</span>
+            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mt-2">${u.name}</h2>
+            <p class="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+              Dengan skor ${isBln ? 'Bulanan' : 'Tahunan'} <strong>${fmtNum(score, 2)}</strong> (Laba Usaha <strong>${fmtRpShort(u.laba_real)}</strong>, CIR <strong>${fmtNum(u.cir, 2)}%</strong>), unit ini ${statusText}
+            </p>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <div class="text-center px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200">
+              <div class="text-xl font-extrabold text-emerald-700">${strengths.length}</div>
+              <div class="text-[11px] font-semibold text-emerald-800">KPI ≥100%</div>
+            </div>
+            <div class="text-center px-4 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
+              <div class="text-xl font-extrabold text-rose-700">${redZones.length}</div>
+              <div class="text-[11px] font-semibold text-rose-800">Zona Merah</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Strengths List
+      document.getElementById('analysis-strengths').innerHTML = strengths.slice(0, 6).map(r => {
+        const ach = isBln ? r.ach_bln : r.ach_thn;
+        return `
+          <li class="flex items-start justify-between gap-2 pb-2 border-b border-slate-100 last:border-0">
+            <div>
+              <div class="font-semibold text-slate-800">${r.sub}</div>
+              <div class="text-xs text-slate-500">Realisasi: ${fmtValueBySub(r.sub, r.realisasi)} (Bobot ${r.bobot}%)</div>
+            </div>
+            <span class="shrink-0 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">${fmtNum(ach, 1)}%</span>
+          </li>
+        `;
+      }).join('') || '<li class="text-slate-400">Belum ada indikator ≥100%.</li>';
+
+      // Red Zones List
+      document.getElementById('analysis-redzones').innerHTML = redZones.map(r => {
+        const ach = isBln ? r.ach_bln : r.ach_thn;
+        const tgt = isBln ? r.target_bln : r.target_thn;
+        return `
+          <li class="flex items-start justify-between gap-2 pb-2 border-b border-slate-100 last:border-0">
+            <div>
+              <div class="font-semibold text-rose-900">${r.sub}</div>
+              <div class="text-xs text-slate-500">Real: <strong>${fmtValueBySub(r.sub, r.realisasi)}</strong> vs Target ${fmtValueBySub(r.sub, tgt)}</div>
+            </div>
+            <span class="shrink-0 text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md">${fmtNum(ach, 1)}%</span>
+          </li>
+        `;
+      }).join('') || '<li class="text-emerald-700 font-medium">Luar biasa! Tidak ada indikator di bawah 70%.</li>';
+
+      // Tailored Actionable Recommendations based on actual red-zone indicators
+      const actions = [];
+      const redSubs = new Set(redZones.map(r => r.sub));
+      if (redSubs.has('LAR GADAI') || redSubs.has('NPL GADAI')) {
+        actions.push('<strong>Gencarkan Penagihan &amp; Roll-Over Gadai:</strong> Lakukan call/WA reminder H-7 sebelum jatuh tempo dan jadwalkan penyelesaian/lelang tepat waktu untuk menekan LAR Gadai di bawah batas target.');
+      }
+      if (redSubs.has('NPL NON GADAI') || redSubs.has('LAR NON GADAI')) {
+        actions.push('<strong>Satgas Penagihan Non Gadai:</strong> Prioritaskan kunjungan lapangan pada debitur menunggak besar dan terapkan skema restrukturisasi atau eksekusi agunan terukur (tiru disiplin seleksi UPC Pasar Wates).');
+      }
+      if (redSubs.has('DEPOSITO EMAS') || redSubs.has('GRAMASI PRODUK GALERI 24')) {
+        actions.push('<strong>Bundling Ekosistem Emas di Loket:</strong> Tawarkan konversi saldo Tabungan Emas ke Deposito Emas dan promosikan cicil/beli emas Galeri 24 kepada nasabah eksisting berdaya beli tinggi.');
+      }
+      if (redSubs.has('OSL AKTIF RATA-RATA NON GADAI') || redSubs.has('OSL GROSS POSISI')) {
+        actions.push('<strong>Akselerasi Penyaluran Berkualitas:</strong> Tingkatkan akuisisi kredit mikro produktif via referral Agen &amp; sinergi BRI dengan prinsip kehati-hatian agar OSL tumbuh tanpa menaikkan NPL.');
+      }
+      if (redSubs.has('TE SINERGI HOLDING')) {
+        actions.push('<strong>Aktivasi Cross-Selling Holding UMi:</strong> Optimalkan pembukaan Tabungan Emas dari setiap nasabah referral BRI/PNM agar target gramasi TE Sinergi Holding segera terkejar.');
+      }
+      if (redSubs.has('NASABAH TRING!') || redSubs.has('OSL LAYANAN TRING!')) {
+        actions.push('<strong>Wajib Aktivasi TRING! di Frontliner:</strong> Bantu setiap nasabah yang datang ke loket untuk registrasi &amp; transaksi pertama di aplikasi Pegadaian Digital TRING!.');
+      }
+      if (u.cir > 25) {
+        actions.push(`<strong>Kontrol Efisiensi Biaya (CIR ${fmtNum(u.cir, 2)}%):</strong> Review pos biaya operasional rutin agar rasio CIR lebih terkendali seiring pertumbuhan pendapatan.`);
+      }
+      if (actions.length === 0) {
+        actions.push('<strong>Pertahankan Momentum &amp; Dorong Stretch Goal:</strong> Fokus menjaga kualitas kredit tetap hijau sambil mengejar potensi bonus dari KPI Stretch Goal.');
+      }
+
+      document.getElementById('analysis-actions').innerHTML = actions.map((act, i) => `
+        <li class="flex items-start gap-2.5 pb-2 border-b border-slate-100 last:border-0">
+          <span class="w-5 h-5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">${i + 1}</span>
+          <div class="leading-relaxed">${act}</div>
+        </li>
+      `).join('');
+    }
+
+    // Switch Tabs
+    function renderTabs() {
+      ['overview', 'table', 'analysis', 'upload'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('hidden', state.activeTab !== t);
+      });
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        const isActive = btn.dataset.tab === state.activeTab;
+        btn.className = `tab-btn flex items-center gap-2 px-4 py-3.5 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition ${
+          isActive ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-slate-500 hover:text-slate-800'
+        }`;
+      });
+    }
+
+    function renderAll() {
+      renderUnitPills();
+      renderTabs();
+      renderHeroCards();
+      renderCharts();
+      renderLeaderboard();
+      renderTable();
+      renderAnalysis();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Parse uploaded Excel file in browser
+    function parseUploadedExcel(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const raw = XLSX.utils.sheet_to_json(ws, { header: 1 });
+            const rows = [];
+            for (let i = 1; i < raw.length; i++) {
+              const r = raw[i];
+              if (!r || r[0] === undefined || r[0] === null || r[0] === '') continue;
+              const toN = v => (v === undefined || v === null || v === '') ? null : (isNaN(Number(v)) ? null : Number(v));
+              rows.push({
+                no: parseInt(r[0], 10),
+                komponen: String(r[1] || '').trim(),
+                sub: String(r[2] || '').trim(),
+                bobot: toN(r[3]),
+                target_bln: toN(r[4]),
+                target_thn: toN(r[5]),
+                realisasi: toN(r[6]),
+                ach_bln: toN(r[7]),
+                nilai_bln: toN(r[8]),
+                ach_thn: toN(r[9]),
+                nilai_thn: toN(r[10])
+              });
+            }
+            if (rows.length === 0) throw new Error('Format tabel tidak dikenali');
+
+            const total_bobot = Number(rows.reduce((a, x) => a + (x.bobot || 0), 0).toFixed(2));
+            const total_nilai_bln = Number(rows.reduce((a, x) => a + (x.nilai_bln || 0), 0).toFixed(2));
+            const total_nilai_thn = Number(rows.reduce((a, x) => a + (x.nilai_thn || 0), 0).toFixed(2));
+            const comp_map = {};
+            rows.forEach(x => {
+              if (!comp_map[x.komponen]) comp_map[x.komponen] = { bobot: 0, nilai_bln: 0, nilai_thn: 0, items: 0 };
+              comp_map[x.komponen].bobot += x.bobot || 0;
+              comp_map[x.komponen].nilai_bln += x.nilai_bln || 0;
+              comp_map[x.komponen].nilai_thn += x.nilai_thn || 0;
+              comp_map[x.komponen].items += 1;
+            });
+            const bySub = Object.fromEntries(rows.map(x => [x.sub, x]));
+            const fname = file.name;
+            const cleanShort = fname.replace(/\.xlsx?$/i, '').split('_').slice(3, -1).join(' ') || fname.replace(/\.xlsx?$/i, '');
+
+            resolve({
+              id: 'upload_' + fname.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+              name: cleanShort,
+              short: cleanShort.slice(0, 18),
+              code: (fname.match(/_(\d+)\.xlsx?$/i) || [])[1] || '-',
+              type: fname.includes('_CP_') ? 'Cabang Konsolidasi' : fname.includes('COLOCATION') ? 'Colocation' : 'UPC (Uploaded)',
+              filename: fname,
+              total_bobot,
+              total_nilai_bln,
+              total_nilai_thn,
+              cir: bySub['CIR'] ? bySub['CIR'].realisasi : null,
+              laba_real: bySub['LABA USAHA'] ? bySub['LABA USAHA'].realisasi : null,
+              osl_gross_real: bySub['OSL GROSS POSISI'] ? bySub['OSL GROSS POSISI'].realisasi : null,
+              stretch_ach: bySub['KPI STRETCH GOAL'] ? bySub['KPI STRETCH GOAL'].ach_bln : null,
+              components: comp_map,
+              rows
+            });
+          } catch (err) {
+            reject(err);
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    // Event Listeners
+    document.getElementById('btn-period-bln').addEventListener('click', () => {
+      state.period = 'bln';
+      document.getElementById('btn-period-bln').className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition bg-white text-emerald-900 shadow-sm';
+      document.getElementById('btn-period-thn').className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition text-emerald-100 hover:text-white';
+      renderAll();
+    });
+
+    document.getElementById('btn-period-thn').addEventListener('click', () => {
+      state.period = 'thn';
+      document.getElementById('btn-period-thn').className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition bg-white text-emerald-900 shadow-sm';
+      document.getElementById('btn-period-bln').className = 'px-3 py-1.5 text-xs font-semibold rounded-md transition text-emerald-100 hover:text-white';
+      renderAll();
+    });
+
+    document.getElementById('btn-print').addEventListener('click', () => window.print());
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.activeTab = btn.dataset.tab;
+        renderTabs();
+        if (state.activeTab === 'overview') renderCharts();
+      });
+    });
+
+    document.getElementById('search-kpi').addEventListener('input', (e) => {
+      state.searchQuery = e.target.value;
+      renderTable();
+    });
+
+    document.getElementById('filter-component').addEventListener('change', (e) => {
+      state.componentFilter = e.target.value;
+      renderTable();
+    });
+
+    document.querySelectorAll('.status-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.statusFilter = btn.dataset.status;
+        renderTable();
+      });
+    });
+
+    document.getElementById('excel-input').addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      let loaded = 0;
+      for (const f of files) {
+        try {
+          const parsed = await parseUploadedExcel(f);
+          const idx = state.units.findIndex(u => u.filename === parsed.filename || u.id === parsed.id);
+          if (idx >= 0) state.units[idx] = parsed;
+          else state.units.push(parsed);
+          state.activeUnitId = parsed.id;
+          loaded++;
+        } catch (err) {
+          showToast(`Gagal membaca ${f.name}: pastikan format Excel KPI sesuai.`, 'error');
+        }
+      }
+      if (loaded > 0) {
+        document.getElementById('date-badge').textContent = 'Data Terbaru (Uploaded)';
+        state.activeTab = 'overview';
+        renderAll();
+        showToast(`${loaded} file Excel KPI berhasil dimuat!`);
+      }
+      e.target.value = '';
+    });
+
+    document.getElementById('btn-reset-data').addEventListener('click', () => {
+      state.units = JSON.parse(JSON.stringify(INITIAL_DATA));
+      state.activeUnitId = 'cp_konsolidasi';
+      document.getElementById('date-badge').textContent = '18 Nov 2026';
+      state.activeTab = 'overview';
+      renderAll();
+      showToast('Data dikembalikan ke posisi 18 Nov 2026.');
+    });
+
+    // Init
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAll();
+    });
+  </script>
+</body>
+</html>
