@@ -168,7 +168,7 @@
           </span>
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse min-w-[820px]">
+          <table class="w-full text-left border-collapse min-w-[920px]">
             <thead>
               <tr class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
                 <th class="py-3 px-4 font-semibold">Rank</th>
@@ -179,6 +179,7 @@
                 <th class="py-3 px-4 font-semibold text-right">OSL Gross</th>
                 <th class="py-3 px-4 font-semibold text-right">CIR</th>
                 <th class="py-3 px-4 font-semibold text-right">Stretch</th>
+                <th class="py-3 px-4 font-semibold text-right" title="Total potensi penambahan poin jika seluruh KPI di bawah 100% mencapai target 100%">Potensi 100%</th>
                 <th class="py-3 px-4 font-semibold text-center">Zona Merah</th>
               </tr>
             </thead>
@@ -216,7 +217,7 @@
         </div>
 
         <div class="overflow-x-auto -mx-4 sm:mx-0">
-          <table class="w-full text-left border-collapse min-w-[1080px]">
+          <table class="w-full text-left border-collapse min-w-[1180px]">
             <thead>
               <tr class="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-y border-slate-200">
                 <th class="py-3 px-2.5 font-semibold w-9">No</th>
@@ -229,6 +230,7 @@
                 <th class="py-3 px-2.5 font-semibold w-36" id="th-ach">Ach (MtD)</th>
                 <th class="py-3 px-2.5 font-semibold text-right" id="th-nilai">Nilai KPI</th>
                 <th class="py-3 px-2.5 font-semibold text-right">Delta Poin</th>
+                <th class="py-3 px-2.5 font-semibold text-right" title="Potensi tambahan poin KPI jika realisasi mencapai target 100%">Potensi 100%</th>
               </tr>
             </thead>
             <tbody id="kpi-table-body" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
@@ -511,6 +513,28 @@
     function getCompPrevNilai(v) {
       if (isDtD()) return state.period === 'bln' ? v.dtd_nilai_bln : v.dtd_nilai_thn;
       return state.period === 'bln' ? v.prev_nilai_bln : v.prev_nilai_thn;
+    }
+    function getRowPotensi100(r) {
+      if (r.bobot === null || r.bobot === undefined || r.bobot <= 0) return null;
+      const nilai = state.period === 'bln' ? r.nilai_bln : r.nilai_thn;
+      if (nilai === null || nilai === undefined || isNaN(nilai)) return null;
+      const gap = r.bobot - nilai;
+      return gap > 0.004 ? Number(gap.toFixed(2)) : 0;
+    }
+    function getUnitPotensi100(u) {
+      return Number(u.rows.reduce((acc, r) => acc + (getRowPotensi100(r) || 0), 0).toFixed(2));
+    }
+    function potensiBadgeHtml(pot, bobot, nilai) {
+      if (pot === null) return '<span class="text-slate-300">—</span>';
+      if (pot <= 0.004) {
+        return `<span title="Sudah mencapai target ≥100% (${fmtNum(nilai, 2)} / ${fmtNum(bobot, 2)} pt)" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700">✓ 100%</span>`;
+      }
+      const cls = pot >= 1.5
+        ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+        : pot >= 0.5
+        ? 'bg-sky-50 text-sky-800 border border-sky-200'
+        : 'bg-slate-100 text-slate-700';
+      return `<span title="Jika target tercapai 100% (${fmtNum(bobot, 2)} pt vs saat ini ${fmtNum(nilai, 2)} pt)" class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold ${cls}">+${fmtNum(pot, 2)} pt</span>`;
     }
     function getActiveUnit() { return state.units.find(u => u.id === state.activeUnitId) || state.units[0]; }
 
@@ -833,6 +857,7 @@
       tbody.innerHTML = outlets.map((u, idx) => {
         const isSelected = u.id === state.activeUnitId;
         const redCount = u.rows.filter(r => r.bobot > 0 && (isBln ? r.ach_bln : r.ach_thn) !== null && (isBln ? r.ach_bln : r.ach_thn) < 70).length;
+        const unitPot = getUnitPotensi100(u);
         const rankBadge = idx === 0
           ? 'bg-amber-100 text-amber-800 border border-amber-300'
           : idx === 1 ? 'bg-slate-200 text-slate-800' : idx === 2 ? 'bg-orange-100 text-orange-800' : 'bg-slate-100 text-slate-600';
@@ -850,6 +875,7 @@
             <td class="py-3 px-4 text-right text-slate-700">${fmtRpShort(u.osl_gross_real)}</td>
             <td class="py-3 px-4 text-right text-slate-700">${fmtNum(u.cir, 2)}%</td>
             <td class="py-3 px-4 text-right font-semibold ${u.stretch_ach >= 100 ? 'text-emerald-700' : 'text-slate-600'}">${fmtNum(u.stretch_ach, 1)}%</td>
+            <td class="py-3 px-4 text-right"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">+${fmtNum(unitPot, 2)} pt</span></td>
             <td class="py-3 px-4 text-center">
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${redCount >= 6 ? 'bg-rose-100 text-rose-800' : redCount >= 4 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${redCount} KPI</span>
             </td>
@@ -908,7 +934,7 @@
 
       const tbody = document.getElementById('kpi-table-body');
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" class="py-8 text-center text-slate-400">Tidak ada indikator yang cocok dengan filter.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-slate-400">Tidak ada indikator yang cocok dengan filter.</td></tr>`;
       } else {
         tbody.innerHTML = filtered.map(r => {
           const target = isBln ? r.target_bln : r.target_thn;
@@ -916,6 +942,7 @@
           const prevAch = getRowPrevAch(r);
           const nilai = isBln ? r.nilai_bln : r.nilai_thn;
           const dNilai = getRowDeltaNilai(r);
+          const pot100 = getRowPotensi100(r);
           const hasWeight = r.bobot !== null && r.bobot > 0;
           const st = hasWeight ? getStatusInfo(ach) : getStatusInfo(null);
           const barW = ach !== null ? Math.min(Math.max(ach, 0), 110) / 110 * 100 : 0;
@@ -945,6 +972,7 @@
               </td>
               <td class="py-3 px-2.5 text-right font-extrabold text-slate-900">${nilai !== null ? fmtNum(nilai, 2) : '—'}</td>
               <td class="py-3 px-2.5 text-right">${hasWeight ? deltaBadgeHtml(dNilai) : '<span class="text-slate-300">—</span>'}</td>
+              <td class="py-3 px-2.5 text-right whitespace-nowrap">${potensiBadgeHtml(pot100, r.bobot, nilai)}</td>
             </tr>
           `;
         }).join('');
@@ -953,13 +981,15 @@
       const sumBobot = filtered.reduce((acc, r) => acc + (r.bobot || 0), 0);
       const sumNilai = filtered.reduce((acc, r) => acc + ((isBln ? r.nilai_bln : r.nilai_thn) || 0), 0);
       const sumDelta = filtered.reduce((acc, r) => acc + (getRowDeltaNilai(r) || 0), 0);
+      const sumPot = filtered.reduce((acc, r) => acc + (getRowPotensi100(r) || 0), 0);
       document.getElementById('kpi-table-foot').innerHTML = `
         <tr>
           <td colspan="2" class="py-3.5 px-2.5">TOTAL (${filtered.length} Indikator)</td>
           <td class="py-3.5 px-2.5 text-right">${fmtNum(sumBobot, 1)}%</td>
-          <td colspan="5" class="py-3.5 px-2.5 text-right text-xs font-medium text-emerald-800">Akumulasi Skor &amp; Delta ${getModeLabel()}</td>
+          <td colspan="5" class="py-3.5 px-2.5 text-right text-xs font-medium text-emerald-800">Akumulasi Skor, Delta ${getModeLabel()} &amp; Potensi 100%</td>
           <td class="py-3.5 px-2.5 text-right text-base text-emerald-900">${fmtNum(sumNilai, 2)}</td>
           <td class="py-3.5 px-2.5 text-right">${deltaBadgeHtml(sumDelta)}</td>
+          <td class="py-3.5 px-2.5 text-right whitespace-nowrap"><span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-extrabold bg-indigo-100 text-indigo-900 border border-indigo-200">+${fmtNum(sumPot, 2)} pt</span></td>
         </tr>
       `;
     }
