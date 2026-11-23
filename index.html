@@ -54,6 +54,21 @@
               </span>
             </div>
             <p class="text-xs sm:text-sm text-emerald-100 mt-0.5">PT Pegadaian Cabang Pamanukan • Analisa Delta MtD &amp; DtD, 4DX &amp; Fishbone (7 Unit)</p>
+            <div class="flex flex-wrap items-center gap-2 mt-2 no-print" id="visitor-badges">
+              <span id="badge-online-wrap" title="Estimasi pengunjung aktif dalam 5 menit terakhir (live via Abacus)" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950/45 text-emerald-100 border border-emerald-300/25">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                </span>
+                <span>Online:</span>
+                <strong id="online-count" class="text-white font-bold">1</strong>
+              </span>
+              <span id="badge-total-wrap" title="Total kunjungan halaman dashboard ini (gratis tanpa login via Abacus)" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-black/25 text-amber-100 border border-amber-300/25">
+                <i data-lucide="eye" class="w-3 h-3 text-amber-300"></i>
+                <span>Total Pengunjung:</span>
+                <strong id="total-visitors-count" class="text-white font-bold">...</strong>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -1608,7 +1623,82 @@
       showToast('Data dikembalikan ke baseline MtD (31 Okt) & DtD (20 Nov) vs 22 Nov 2026.');
     });
 
-    window.addEventListener('DOMContentLoaded', () => { renderAll(); });
+    // Free Visitor & Online Counter (Abacus API - no signup/key, with graceful local fallback)
+    const VISITOR_NS = 'pegadaian-pamanukan-kpi-13309';
+    let onlinePollTimer = null;
+
+    function safeStorageGet(storage, key) {
+      try { return storage.getItem(key); } catch (_) { return null; }
+    }
+    function safeStorageSet(storage, key, val) {
+      try { storage.setItem(key, val); } catch (_) {}
+    }
+
+    async function fetchAbacus(action, key) {
+      try {
+        const url = `https://abacus.jasoncameron.dev/${action}/${VISITOR_NS}/${key}`;
+        const res = await fetch(url, { mode: 'cors', cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (typeof data.value !== 'number') throw new Error('Invalid payload');
+        return data.value;
+      } catch (err) {
+        throw err;
+      }
+    }
+
+    async function updateTotalVisitors() {
+      const el = document.getElementById('total-visitors-count');
+      const wrap = document.getElementById('badge-total-wrap');
+      if (!el) return;
+      const countedKey = 'kpi_pamanukan_visit_counted';
+      const alreadyCounted = safeStorageGet(sessionStorage, countedKey) === '1';
+      try {
+        const val = await fetchAbacus(alreadyCounted ? 'get' : 'hit', 'total-visits');
+        if (!alreadyCounted) safeStorageSet(sessionStorage, countedKey, '1');
+        el.textContent = Number(val).toLocaleString('id-ID');
+        safeStorageSet(localStorage, 'kpi_pamanukan_last_total', String(val));
+        if (wrap) wrap.title = `Total kunjungan global tercatat: ${Number(val).toLocaleString('id-ID')} (live via Abacus)`;
+      } catch (_) {
+        const prevLocal = parseInt(safeStorageGet(localStorage, 'kpi_pamanukan_local_visits') || '0', 10) || 0;
+        const nextLocal = alreadyCounted ? Math.max(1, prevLocal) : prevLocal + 1;
+        if (!alreadyCounted) {
+          safeStorageSet(sessionStorage, countedKey, '1');
+          safeStorageSet(localStorage, 'kpi_pamanukan_local_visits', String(nextLocal));
+        }
+        const cachedGlobal = parseInt(safeStorageGet(localStorage, 'kpi_pamanukan_last_total') || '0', 10) || 0;
+        el.textContent = Number(Math.max(cachedGlobal, nextLocal)).toLocaleString('id-ID');
+        if (wrap) wrap.title = 'Menampilkan hitungan lokal (otomatis tersinkron global saat dibuka online)';
+      }
+    }
+
+    async function updateOnlineVisitors() {
+      const el = document.getElementById('online-count');
+      if (!el) return;
+      const bucket = Math.floor(Date.now() / (5 * 60 * 1000));
+      const bucketKey = `live-${bucket}`;
+      const seenBucket = safeStorageGet(sessionStorage, 'kpi_pamanukan_live_bucket');
+      try {
+        const action = seenBucket === bucketKey ? 'get' : 'hit';
+        const val = await fetchAbacus(action, bucketKey);
+        if (action === 'hit') safeStorageSet(sessionStorage, 'kpi_pamanukan_live_bucket', bucketKey);
+        el.textContent = Number(Math.max(1, val)).toLocaleString('id-ID');
+      } catch (_) {
+        el.textContent = '1';
+      }
+    }
+
+    function initVisitorCounters() {
+      updateTotalVisitors();
+      updateOnlineVisitors();
+      if (onlinePollTimer) clearInterval(onlinePollTimer);
+      onlinePollTimer = setInterval(updateOnlineVisitors, 60000);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderAll();
+      initVisitorCounters();
+    });
   </script>
 </body>
 </html>
