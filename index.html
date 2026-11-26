@@ -439,17 +439,17 @@
       </div>
     </section>
 
-    <!-- TAB 5: UPLOAD EXCEL HARIAN (2 SLOTS: BASELINE + TERBARU) -->
-    <section id="tab-upload" class="hidden space-y-5">
-      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm max-w-4xl mx-auto">
+    <!-- TAB 5: UPLOAD EXCEL HARIAN & AUTO-PUBLISH GITHUB -->
+    <section id="tab-upload" class="hidden space-y-5 max-w-4xl mx-auto">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <div class="flex items-start gap-3.5 mb-5">
           <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
             <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
           </div>
           <div>
-            <h2 class="text-base font-bold text-slate-800">Update Data KPI MtD Langsung dari File Excel</h2>
+            <h2 class="text-base font-bold text-slate-800">1. Upload File Excel KPI Terbaru (Area / Per-Unit)</h2>
             <p class="text-xs sm:text-sm text-slate-500 mt-1">
-              Unggah file Excel KPI terbaru untuk memperbarui perbandingan Month-to-Date secara instan di browser. Kamu bisa memperbarui data <strong>Terbaru</strong> saja (tetap dibandingkan dengan 31 Okt) atau mengganti <strong>Pembanding (Baseline)</strong> sekaligus.
+              Mendukung <strong>1 file Detail KPI Area Cirebon</strong> (otomatis ekstrak 7 unit CP Pamanukan sekaligus) maupun <strong>7 file KPI per-unit</strong>. Setelah diunggah, klik <strong>Publish ke GitHub</strong> di bawah agar semua pengunjung langsung melihat data terbaru.
             </p>
           </div>
         </div>
@@ -457,29 +457,110 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label for="excel-input" class="flex flex-col items-center justify-center border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-50 rounded-2xl p-6 cursor-pointer transition text-center">
             <i data-lucide="upload-cloud" class="w-9 h-9 text-emerald-600 mb-2"></i>
-            <span class="text-sm font-bold text-slate-800">1. Upload KPI Terbaru (Hari Ini)</span>
-            <span class="text-xs text-slate-500 mt-1">Bisa pilih 1 atau 7 file `.xlsx` sekaligus untuk menimpa posisi 25 Nov</span>
+            <span class="text-sm font-bold text-slate-800">Upload KPI Terbaru (Hari Ini)</span>
+            <span class="text-xs text-slate-500 mt-1">Pilih 1 file Detail Area Cirebon atau 7 file unit `.xlsx` sekaligus</span>
             <input id="excel-input" type="file" accept=".xlsx,.xls" multiple class="hidden" />
           </label>
 
           <label for="excel-baseline-input" class="flex flex-col items-center justify-center border-2 border-dashed border-amber-300 hover:border-amber-500 bg-amber-50/40 hover:bg-amber-50 rounded-2xl p-6 cursor-pointer transition text-center">
             <i data-lucide="history" class="w-9 h-9 text-amber-600 mb-2"></i>
-            <span class="text-sm font-bold text-slate-800">2. Upload KPI Pembanding (Opsional)</span>
+            <span class="text-sm font-bold text-slate-800">Upload KPI Pembanding (Opsional)</span>
             <span id="upload-baseline-hint" class="text-xs text-slate-500 mt-1">Ganti baseline mode aktif (MtD: 31 Okt / DtD: 24 Nov) dengan tanggal pembanding lain</span>
             <input id="excel-baseline-input" type="file" accept=".xlsx,.xls" multiple class="hidden" />
           </label>
         </div>
 
-        <div class="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-100">
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+          <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+            <input id="chk-roll-dtd" type="checkbox" checked class="rounded border-slate-300 text-emerald-700 focus:ring-emerald-500" />
+            <span>Otomatis geser data sebelumnya menjadi <strong>baseline DtD</strong> saat upload KPI terbaru</span>
+          </label>
+          <span id="upload-ready-badge" class="hidden text-xs font-bold text-emerald-800 bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-full">Siap Publish ke GitHub</span>
+        </div>
+
+        <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-100">
           <div class="flex items-center gap-2 text-xs text-slate-500">
             <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600 shrink-0"></i>
-            <span>Privasi terjaga: file diproses 100% lokal di browser Anda, tidak dikirim ke server luar.</span>
+            <span>File Excel diproses 100% lokal di browser Anda.</span>
           </div>
           <button id="btn-reset-data" type="button" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition shrink-0">
             <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
             <span>Reset ke Data 31 Okt vs 25 Nov 2026</span>
           </button>
         </div>
+      </div>
+
+      <!-- AUTO-PUBLISH 1-KLIK KE GITHUB (data.json) -->
+      <div class="bg-white rounded-2xl border border-emerald-200 p-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+          <div class="flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center shrink-0">
+              <i data-lucide="rocket" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="text-base font-bold text-slate-900">2. Auto-Publish 1-Klik ke GitHub Pages</h2>
+                <span id="gh-sync-pill" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Data Embedded</span>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                Perbarui file <code class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 font-semibold">data.json</code> di repositori GitHub Anda lewat GitHub API tanpa mengedit <code class="px-1 py-0.5 rounded bg-slate-100 text-slate-700">index.html</code> lagi. Dalam ±30 detik, semua pengunjung langsung melihat data terbaru.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label for="gh-owner" class="block text-xs font-semibold text-slate-700 mb-1">GitHub Username / Owner</label>
+            <input id="gh-owner" type="text" placeholder="contoh: yanirawan" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+          <div>
+            <label for="gh-repo" class="block text-xs font-semibold text-slate-700 mb-1">Nama Repository</label>
+            <input id="gh-repo" type="text" placeholder="contoh: kpi-pamanukan" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+          <div>
+            <label for="gh-branch" class="block text-xs font-semibold text-slate-700 mb-1">Branch</label>
+            <input id="gh-branch" type="text" value="main" placeholder="main" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+          <div>
+            <label for="gh-path" class="block text-xs font-semibold text-slate-700 mb-1">Nama File Data</label>
+            <input id="gh-path" type="text" value="data.json" placeholder="data.json" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+          <div class="sm:col-span-2">
+            <label for="gh-token" class="block text-xs font-semibold text-slate-700 mb-1">GitHub Personal Access Token (PAT) <span class="font-normal text-slate-400">— tersimpan lokal di browser Anda saja</span></label>
+            <div class="flex gap-2">
+              <input id="gh-token" type="password" placeholder="github_pat_..." autocomplete="off" class="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono" />
+              <button id="btn-toggle-gh-token" type="button" class="px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition">Tampilkan</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-2.5">
+          <button id="btn-publish-github" type="button" class="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white transition shadow-sm">
+            <i data-lucide="send" class="w-4 h-4"></i>
+            <span>Publish ke GitHub (data.json)</span>
+          </button>
+          <button id="btn-save-gh-cfg" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 transition">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span>Simpan Pengaturan</span>
+          </button>
+          <button id="btn-download-json" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Unduh data.json</span>
+          </button>
+        </div>
+
+        <div id="gh-publish-status" class="hidden mt-4 rounded-xl px-4 py-3 text-xs"></div>
+
+        <details class="mt-4 rounded-xl bg-slate-50 border border-slate-200 p-3.5 text-xs text-slate-600">
+          <summary class="font-bold text-slate-800 cursor-pointer">Panduan Buat GitHub Token (1 Menit — Cukup Sekali Saja)</summary>
+          <ol class="list-decimal pl-5 mt-2.5 space-y-1.5 leading-relaxed">
+            <li>Buka GitHub → <strong>Settings</strong> → <strong>Developer settings</strong> → <strong>Personal access tokens</strong> → <strong>Fine-grained tokens</strong> → klik <strong>Generate new token</strong>.</li>
+            <li>Pilih <strong>Repository access → Only select repositories</strong>, lalu pilih repository dashboard KPI Anda.</li>
+            <li>Di bagian <strong>Repository permissions</strong>, ubah <strong>Contents</strong> menjadi <strong>Read and write</strong>, lalu klik <strong>Generate token</strong>.</li>
+            <li>Salin tokennya, tempel di kolom Token di atas, lalu klik <strong>Simpan Pengaturan</strong>. Token hanya disimpan di browser Anda sendiri dan hanya dipakai untuk meng-update <code>data.json</code>.</li>
+          </ol>
+        </details>
       </div>
     </section>
 
@@ -1293,68 +1374,70 @@
     }
 
     function renderCrossOutletMatrix() {
+      const mLabel = getModeLabel();
       const baseD = getBaseDateShort();
       const curD = getCurrentDateShort();
+      const isBln = state.period === 'bln';
       const matrixEl = document.getElementById('cross-outlet-matrix');
-      if (isDtD()) {
-        matrixEl.innerHTML = `
-          <div class="mb-4">
-            <h3 class="text-base font-bold text-slate-800">Matriks Pengawasan DtD &amp; Pergerakan Harian Lintas Outlet</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Ringkasan pergerakan harian ${baseD} → ${curD} 2026 se-CP Pamanukan.</p>
+      if (!matrixEl) return;
+
+      const outlets = state.units.filter(u => u.id !== 'cp_konsolidasi');
+      const cp = state.units.find(u => u.id === 'cp_konsolidasi') || state.units[0];
+
+      const withTopMovers = outlets.map(u => {
+        const delta = getUnitDelta(u);
+        const cur = getUnitScore(u);
+        const prev = getUnitPrevScore(u);
+        const drops = u.rows
+          .filter(r => (getRowDeltaNilai(r) || 0) < -0.005)
+          .sort((a, b) => getRowDeltaNilai(a) - getRowDeltaNilai(b))
+          .slice(0, 3);
+        const gains = u.rows
+          .filter(r => (getRowDeltaNilai(r) || 0) > 0.005)
+          .sort((a, b) => getRowDeltaNilai(b) - getRowDeltaNilai(a))
+          .slice(0, 3);
+        return { u, delta, cur, prev, drops, gains };
+      });
+
+      const alarmUnits = [...withTopMovers].filter(x => x.delta < -0.005).sort((a, b) => a.delta - b.delta).slice(0, 4);
+      const positiveUnits = [...withTopMovers].sort((a, b) => b.delta - a.delta).slice(0, 3);
+
+      const fmtDrivers = (arr) => arr.map(r => `${r.sub} (${fmtSigned(getRowDeltaNilai(r), 2)} pt)`).join(', ') || 'stabil';
+
+      const alarmHtml = alarmUnits.length
+        ? alarmUnits.map(x => `
+            <li><strong class="text-rose-900">${x.u.name} (${fmtSigned(x.delta, 2)} pt | ${fmtNum(x.prev, 2)} → ${fmtNum(x.cur, 2)}):</strong> Penekan utama: ${fmtDrivers(x.drops)}.</li>
+          `).join('')
+        : `<li><strong class="text-emerald-900">Seluruh 6 outlet mencatat pergerakan positif / stabil ${mLabel}!</strong> Tidak ada unit yang mengalami penurunan skor pada periode ${baseD} → ${curD}.</li>`;
+
+      const cpDeltaThn = isDtD() ? cp.dtd_delta_total_thn : cp.delta_total_thn;
+      const cpPrevThn = isDtD() ? cp.dtd_total_nilai_thn : cp.prev_total_nilai_thn;
+      const posHtml = positiveUnits.map(x => `
+        <li><strong class="text-emerald-900">${x.u.name} (${fmtSigned(x.delta, 2)} pt | ${fmtNum(x.prev, 2)} → ${fmtNum(x.cur, 2)}):</strong> Pendongkrak utama: ${fmtDrivers(x.gains)}.</li>
+      `).join('') + `
+        <li><strong class="text-emerald-900">CP Konsolidasi (${isBln ? 'Bulanan' : 'Tahunan'} ${fmtNum(getUnitScore(cp), 2)} | ${fmtSigned(getUnitDelta(cp), 2)} pt ${mLabel}):</strong> Skor Tahunan konsolidasi di posisi <strong>${fmtNum(cp.total_nilai_thn, 2)}</strong> (${fmtSigned(cpDeltaThn, 2)} pt dari ${fmtNum(cpPrevThn, 2)}).</li>
+      `;
+
+      matrixEl.innerHTML = `
+        <div class="mb-4">
+          <h3 class="text-base font-bold text-slate-800">Matriks Pengawasan ${mLabel} &amp; Benchmarking Lintas Outlet</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Ringkasan otomatis pergerakan ${baseD} → ${curD} 2026 se-CP Pamanukan.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="rounded-xl bg-rose-50/70 border border-rose-200 p-4">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-rose-800 mb-2.5 flex items-center gap-1.5">
+              <i data-lucide="flame" class="w-4 h-4"></i> Alarm Penurunan ${mLabel} Terbesar
+            </h4>
+            <ul class="space-y-2 text-xs sm:text-sm text-slate-700">${alarmHtml}</ul>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="rounded-xl bg-rose-50/70 border border-rose-200 p-4">
-              <h4 class="text-xs font-extrabold uppercase tracking-wider text-rose-800 mb-2.5 flex items-center gap-1.5">
-                <i data-lucide="flame" class="w-4 h-4"></i> Unit Terkoreksi DtD (24 → 25 Nov)
-              </h4>
-              <ul class="space-y-2 text-xs sm:text-sm text-slate-700">
-                <li><strong class="text-rose-900">Colocation BRI Bojongkeding (-0,58 pt | 98,01 → 97,43):</strong> Terkoreksi harian karena <strong>OSL Layanan TRING! turun Rp 29,14 Jt (-0,63 pt)</strong> dan Tabungan Emas (-0,03 pt), meski LAR Gadai membaik ke 2,83% (+0,09 pt).</li>
-                <li><strong class="text-rose-900">UPC Pusaka Ratu (-0,01 pt | 90,73 → 90,72):</strong> Relatif stabil; penurunan <strong>OSL Sinergi Holding (-0,16 pt)</strong> hampir tertutup penuh oleh perbaikan LAR Gadai 3,79% → 3,63% (+0,10 pt) dan TRING! (+0,04 pt).</li>
-              </ul>
-            </div>
-            <div class="rounded-xl bg-emerald-50/70 border border-emerald-200 p-4">
-              <h4 class="text-xs font-extrabold uppercase tracking-wider text-emerald-800 mb-2.5 flex items-center gap-1.5">
-                <i data-lucide="award" class="w-4 h-4"></i> Momentum Positif DtD (24 → 25 Nov)
-              </h4>
-              <ul class="space-y-2 text-xs sm:text-sm text-slate-700">
-                <li><strong class="text-emerald-900">UPC CP Pamanukan (+0,24 pt | 94,31 → 94,55):</strong> Kenaikan tertinggi se-cabang berkat <strong>Nasabah Baru Agen (+0,05 pt)</strong>, perbaikan LAR Gadai 2,96% → 2,91% (+0,05 pt), dan OSL TRING! (+0,04 pt).</li>
-                <li><strong class="text-emerald-900">UPC Ciasem (+0,11 pt | 88,21 → 88,32) &amp; Rancasari (+0,10 pt | 83,55 → 83,65):</strong> Ciasem rebound berkat <strong>OSL TRING! (+0,21 pt)</strong>, sementara Rancasari didorong Nasabah Baru (+0,05 pt) &amp; Tabungan Emas (+0,04 pt).</li>
-                <li><strong class="text-emerald-900">CP Konsolidasi (+0,06 pt | 91,75 → 91,81) &amp; Pasar Wates (+0,05 pt | 89,90):</strong> Konsolidasi naik di Bulanan maupun Tahunan (89,67) didukung perbaikan NPL Non Gadai (+0,03 pt) dan LAR Gadai 5,47% → 5,36% (+0,03 pt).</li>
-              </ul>
-            </div>
+          <div class="rounded-xl bg-emerald-50/70 border border-emerald-200 p-4">
+            <h4 class="text-xs font-extrabold uppercase tracking-wider text-emerald-800 mb-2.5 flex items-center gap-1.5">
+              <i data-lucide="award" class="w-4 h-4"></i> Motor Positif &amp; Benchmark Internal
+            </h4>
+            <ul class="space-y-2 text-xs sm:text-sm text-slate-700">${posHtml}</ul>
           </div>
-        `;
-      } else {
-        matrixEl.innerHTML = `
-          <div class="mb-4">
-            <h3 class="text-base font-bold text-slate-800">Matriks Pengawasan MtD &amp; Benchmarking Lintas Outlet</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Ringkasan pergerakan ${baseD} → ${curD} 2026 se-CP Pamanukan.</p>
-          </div>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="rounded-xl bg-rose-50/70 border border-rose-200 p-4">
-              <h4 class="text-xs font-extrabold uppercase tracking-wider text-rose-800 mb-2.5 flex items-center gap-1.5">
-                <i data-lucide="flame" class="w-4 h-4"></i> Alarm Penurunan MtD Terbesar
-              </h4>
-              <ul class="space-y-2 text-xs sm:text-sm text-slate-700">
-                <li><strong class="text-rose-900">UPC Rancasari (-2,34 pt | 85,99 → 83,65):</strong> Penurunan terdalam se-cabang akibat OSL Aktif Rata-Rata Gadai (-0,53 pt), <strong>OSL Sinergi Holding (-0,50 pt)</strong>, dan Nasabah TRING! (-0,33 pt).</li>
-                <li><strong class="text-rose-900">UPC Pasar Wates (-2,15 pt | 92,05 → 89,90):</strong> Tinggal 0,10 pt lagi menembus 90; penekan MtD masih di OSL Gadai (-0,31 pt), OSL Emas (-0,31 pt), dan OSL TRING! (-0,28 pt).</li>
-                <li><strong class="text-rose-900">UPC Pusaka Ratu (-1,24 pt | 91,96 → 90,72):</strong> Kokoh di atas 90; sisa penekan MtD di Nasabah TRING! (-0,34 pt), OSL Sinergi Holding (-0,28 pt), dan Frekuensi TRING! (-0,20 pt).</li>
-                <li><strong class="text-rose-900">UPC Ciasem (-1,23 pt | 89,55 → 88,32):</strong> Meski NPL Emas sembuh total (+1,74 pt), <strong>LAR Emas masih tinggi di 26,33% (-1,55 pt)</strong> dan Deposito Emas turun ke 140 gr (-0,18 pt).</li>
-              </ul>
-            </div>
-            <div class="rounded-xl bg-emerald-50/70 border border-emerald-200 p-4">
-              <h4 class="text-xs font-extrabold uppercase tracking-wider text-emerald-800 mb-2.5 flex items-center gap-1.5">
-                <i data-lucide="award" class="w-4 h-4"></i> Motor Positif &amp; Benchmark Internal
-              </h4>
-              <ul class="space-y-2 text-xs sm:text-sm text-slate-700">
-                <li><strong class="text-emerald-900">UPC CP Pamanukan (+1,50 pt | 93,05 → 94,55 | #2):</strong> Pertumbuhan MtD tertinggi se-cabang berkat Galeri 24 (+0,84 pt), perbaikan LAR Gadai ke 2,91% (+0,41 pt), dan OSL TRING! (+0,38 pt).</li>
-                <li><strong class="text-emerald-900">Colocation BRI Bojongkeding (+0,53 pt | 96,90 → 97,43 | #1):</strong> Tetap memimpin peringkat cabang berkat Galeri 24 (+0,43 pt), Deposito Emas (+0,40 pt), dan LAR Gadai membaik ke 2,83%.</li>
-                <li><strong class="text-emerald-900">Tren Skor Tahunan Konsolidasi (+0,92 pt):</strong> Secara tahunan CP Pamanukan terus menguat (88,75 → 89,67), sementara gap MtD bulanan kian menyempit ke -1,06 pt (<strong>91,81</strong>).</li>
-              </ul>
-            </div>
-          </div>
-        `;
-      }
+        </div>
+      `;
     }
 
     // 7. Dynamic 4DX & Fishbone per Active Unit
@@ -1578,7 +1661,37 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    // Parse Uploaded Excel File
+    // Parse Uploaded Excel File (Supports both 1-file Detail KPI Area Cirebon AND per-unit Excel)
+    const UNCAPPED_SUBS = new Set(['OSL AKTIF RATA-RATA GADAI', 'OSL AKTIF RATA-RATA EMAS', 'DEPOSITO EMAS', 'KPI STRETCH GOAL']);
+    const AREA_UNIT_MAP = {
+      'CP|13309:CP PAMANUKAN': 'cp_konsolidasi',
+      'COLOCATION|17457:BRI UNIT BOJONGKEDING': 'colo_bojongkeding',
+      'UPC|13309:CP PAMANUKAN': 'upc_pamanukan',
+      'UPC|13311:UPC PUSAKA RATU': 'upc_pusaka_ratu',
+      'UPC|13312:UPC PASAR WATES': 'upc_pasar_wates',
+      'UPC|13314:UPC CIASEM': 'upc_ciasem',
+      'UPC|13313:UPC RANCASARI': 'upc_rancasari'
+    };
+
+    function calcAchValue(sub, real, target) {
+      if (sub === 'CIR' || sub === 'BRAND AWARENESS' || real === null || target === null || target === 0) return 0;
+      if (REVERSE_SUBS.has(sub)) {
+        const raw = real <= 0 ? 110 : (target / real) * 100;
+        return Number(Math.min(raw, 110).toFixed(2));
+      }
+      const raw = (real / target) * 100;
+      return Number((UNCAPPED_SUBS.has(sub) ? raw : Math.min(raw, 110)).toFixed(2));
+    }
+
+    function extractDateFromFilename(fname) {
+      const m = fname.match(/(\d{1,2})[-\s_](Jan|Feb|Mar|Apr|Mei|May|Jun|Jul|Agt|Aug|Sep|Sept|Okt|Oct|Nov|Des|Dec)/i);
+      if (!m) return null;
+      const mapMon = { MAY: 'Mei', AUG: 'Agt', OCT: 'Okt', DEC: 'Des', SEP: 'Sept' };
+      const rawMon = m[2].charAt(0).toUpperCase() + m[2].slice(1).toLowerCase();
+      const mon = mapMon[m[2].toUpperCase()] || rawMon;
+      return `${parseInt(m[1], 10)} ${mon}`;
+    }
+
     function parseExcelRows(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1586,11 +1699,46 @@
           try {
             const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
             const raw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+            if (!raw || raw.length < 2) throw new Error('Kosong');
+            const toN = v => (v === undefined || v === null || v === '') ? null : (isNaN(Number(v)) ? null : Number(v));
+            const hdr0 = String(raw[0][0] || '').trim().toUpperCase();
+            const hdr1 = String(raw[0][1] || '').trim().toUpperCase();
+
+            // Format A: Detail KPI Area Cirebon (1 file berisi semua unit)
+            if (hdr0 === 'KATEGORI' && hdr1 === 'UNIT') {
+              const unitRows = {};
+              for (let i = 1; i < raw.length; i++) {
+                const r = raw[i];
+                if (!r || !r[0] || !r[1] || !r[2]) continue;
+                const k = `${String(r[0]).trim().toUpperCase()}|${String(r[1]).trim().toUpperCase()}`;
+                const uid = AREA_UNIT_MAP[k];
+                if (!uid) continue;
+                const sub = String(r[2]).trim();
+                const bobot = toN(r[3]);
+                const target_bln = toN(r[4]);
+                const target_thn = toN(r[5]);
+                const realisasi = toN(r[6]);
+                const nilai_bln = toN(r[7]);
+                const nilai_thn = toN(r[8]);
+                if (!unitRows[uid]) unitRows[uid] = [];
+                unitRows[uid].push({
+                  sub, bobot, target_bln, target_thn, realisasi,
+                  ach_bln: calcAchValue(sub, realisasi, target_bln),
+                  nilai_bln,
+                  ach_thn: calcAchValue(sub, realisasi, target_thn),
+                  nilai_thn
+                });
+              }
+              if (!Object.keys(unitRows).length) throw new Error('Unit CP Pamanukan tidak ditemukan di file Area');
+              resolve({ filename: file.name, format: 'area', unitRows });
+              return;
+            }
+
+            // Format B: KPI per-unit (1 file per unit)
             const rows = [];
             for (let i = 1; i < raw.length; i++) {
               const r = raw[i];
               if (!r || r[0] === undefined || r[0] === null || r[0] === '') continue;
-              const toN = v => (v === undefined || v === null || v === '') ? null : (isNaN(Number(v)) ? null : Number(v));
               rows.push({
                 no: parseInt(r[0], 10),
                 komponen: String(r[1] || '').trim(),
@@ -1606,7 +1754,7 @@
               });
             }
             if (!rows.length) throw new Error('Kosong');
-            resolve({ filename: file.name, rows });
+            resolve({ filename: file.name, format: 'unit', rows });
           } catch (err) { reject(err); }
         };
         reader.onerror = reject;
@@ -1672,57 +1820,281 @@
       u.stretch_ach = bySub['KPI STRETCH GOAL'] ? bySub['KPI STRETCH GOAL'].ach_bln : u.stretch_ach;
     }
 
+    function applyRowsToUnit(unit, rows, isBaseline, rollToDtD) {
+      const bySub = Object.fromEntries(rows.map(r => [r.sub, r]));
+      if (!isBaseline && rollToDtD) {
+        unit.dtd_osl_gross_real = unit.osl_gross_real;
+        unit.dtd_stretch_ach = unit.stretch_ach;
+      }
+      unit.rows.forEach(r => {
+        const m = bySub[r.sub];
+        if (!m) return;
+        if (isBaseline) {
+          if (isDtD()) {
+            r.dtd_realisasi = m.realisasi;
+            r.dtd_ach_bln = m.ach_bln;
+            r.dtd_nilai_bln = m.nilai_bln;
+            r.dtd_ach_thn = m.ach_thn;
+            r.dtd_nilai_thn = m.nilai_thn;
+          } else {
+            r.prev_realisasi = m.realisasi;
+            r.prev_ach_bln = m.ach_bln;
+            r.prev_nilai_bln = m.nilai_bln;
+            r.prev_ach_thn = m.ach_thn;
+            r.prev_nilai_thn = m.nilai_thn;
+          }
+        } else {
+          if (rollToDtD) {
+            r.dtd_realisasi = r.realisasi;
+            r.dtd_ach_bln = r.ach_bln;
+            r.dtd_nilai_bln = r.nilai_bln;
+            r.dtd_ach_thn = r.ach_thn;
+            r.dtd_nilai_thn = r.nilai_thn;
+          }
+          if (m.bobot !== null && m.bobot !== undefined) r.bobot = m.bobot;
+          r.target_bln = m.target_bln;
+          r.target_thn = m.target_thn;
+          r.realisasi = m.realisasi;
+          r.ach_bln = m.ach_bln;
+          r.nilai_bln = m.nilai_bln;
+          r.ach_thn = m.ach_thn;
+          r.nilai_thn = m.nilai_thn;
+        }
+      });
+      recomputeUnit(unit);
+    }
+
     async function handleExcelUpload(files, isBaseline) {
       let updated = 0;
+      let detectedDate = null;
+      const rollChk = document.getElementById('chk-roll-dtd');
+      const rollToDtD = !isBaseline && rollChk && rollChk.checked;
+
       for (const f of files) {
         try {
-          const { filename, rows } = await parseExcelRows(f);
-          const unit = findMatchingUnit(filename);
-          if (!unit) continue;
-          const bySub = Object.fromEntries(rows.map(r => [r.sub, r]));
-          unit.rows.forEach(r => {
-            const m = bySub[r.sub];
-            if (!m) return;
-            if (isBaseline) {
-              if (isDtD()) {
-                r.dtd_realisasi = m.realisasi;
-                r.dtd_ach_bln = m.ach_bln;
-                r.dtd_nilai_bln = m.nilai_bln;
-                r.dtd_ach_thn = m.ach_thn;
-                r.dtd_nilai_thn = m.nilai_thn;
-              } else {
-                r.prev_realisasi = m.realisasi;
-                r.prev_ach_bln = m.ach_bln;
-                r.prev_nilai_bln = m.nilai_bln;
-                r.prev_ach_thn = m.ach_thn;
-                r.prev_nilai_thn = m.nilai_thn;
+          const parsed = await parseExcelRows(f);
+          const dLabel = extractDateFromFilename(parsed.filename);
+          if (dLabel) detectedDate = dLabel;
+
+          if (parsed.format === 'area') {
+            Object.entries(parsed.unitRows).forEach(([uid, rows]) => {
+              const unit = state.units.find(u => u.id === uid);
+              if (unit) {
+                applyRowsToUnit(unit, rows, isBaseline, rollToDtD);
+                unit.filename = parsed.filename;
+                updated++;
               }
-            } else {
-              r.target_bln = m.target_bln;
-              r.target_thn = m.target_thn;
-              r.realisasi = m.realisasi;
-              r.ach_bln = m.ach_bln;
-              r.nilai_bln = m.nilai_bln;
-              r.ach_thn = m.ach_thn;
-              r.nilai_thn = m.nilai_thn;
-            }
-          });
-          recomputeUnit(unit);
-          updated++;
+            });
+          } else {
+            const unit = findMatchingUnit(parsed.filename);
+            if (!unit) continue;
+            applyRowsToUnit(unit, parsed.rows, isBaseline, rollToDtD);
+            unit.filename = parsed.filename;
+            updated++;
+          }
         } catch (err) {
           showToast(`Gagal membaca ${f.name}`, 'error');
         }
       }
+
       if (updated > 0) {
         if (isBaseline) {
-          if (isDtD()) state.customLabels.dtdBase = 'Baseline DtD Baru';
-          else state.customLabels.mtdBase = 'Baseline MtD Baru';
+          if (isDtD()) state.customLabels.dtdBase = detectedDate || 'Baseline DtD Baru';
+          else state.customLabels.mtdBase = detectedDate || 'Baseline MtD Baru';
         } else {
-          state.customLabels.current = 'Data Terbaru';
+          if (rollToDtD && state.customLabels.current !== detectedDate) {
+            state.customLabels.dtdBase = state.customLabels.current;
+          }
+          state.customLabels.current = detectedDate || 'Data Terbaru';
         }
-        state.activeTab = 'overview';
+        const readyBadge = document.getElementById('upload-ready-badge');
+        if (readyBadge) readyBadge.classList.remove('hidden');
         renderAll();
-        showToast(`${updated} unit berhasil diperbarui (${getModeLabel()})!`);
+        showToast(`${updated} unit diperbarui (${state.customLabels.current})! Klik "Publish ke GitHub" agar live untuk semua pengunjung.`);
+      }
+    }
+
+    // === AUTO-PUBLISH 1-KLIK KE GITHUB (data.json) & AUTO-LOAD LIVE data.json ===
+    const GH_CFG_KEY = 'kpi_pamanukan_gh_cfg_v1';
+
+    function detectGithubPagesRepo() {
+      try {
+        const host = window.location.hostname || '';
+        if (host.endsWith('.github.io')) {
+          const owner = host.replace('.github.io', '');
+          const seg = (window.location.pathname || '/').split('/').filter(Boolean)[0] || '';
+          return { owner, repo: seg };
+        }
+      } catch (_) {}
+      return { owner: '', repo: '' };
+    }
+
+    function loadGithubConfig() {
+      const detected = detectGithubPagesRepo();
+      let saved = {};
+      try {
+        const raw = safeStorageGet(localStorage, GH_CFG_KEY);
+        if (raw) saved = JSON.parse(raw);
+      } catch (_) {}
+      const ownerEl = document.getElementById('gh-owner');
+      const repoEl = document.getElementById('gh-repo');
+      const branchEl = document.getElementById('gh-branch');
+      const pathEl = document.getElementById('gh-path');
+      const tokenEl = document.getElementById('gh-token');
+      if (ownerEl) ownerEl.value = saved.owner || detected.owner || '';
+      if (repoEl) repoEl.value = saved.repo || detected.repo || '';
+      if (branchEl) branchEl.value = saved.branch || 'main';
+      if (pathEl) pathEl.value = saved.path || 'data.json';
+      if (tokenEl) tokenEl.value = saved.token || '';
+    }
+
+    function getGithubConfigFromUI() {
+      return {
+        owner: (document.getElementById('gh-owner')?.value || '').trim(),
+        repo: (document.getElementById('gh-repo')?.value || '').trim(),
+        branch: (document.getElementById('gh-branch')?.value || 'main').trim() || 'main',
+        path: (document.getElementById('gh-path')?.value || 'data.json').trim().replace(/^\/+/, '') || 'data.json',
+        token: (document.getElementById('gh-token')?.value || '').trim()
+      };
+    }
+
+    function saveGithubConfig(showMsg = true) {
+      const cfg = getGithubConfigFromUI();
+      safeStorageSet(localStorage, GH_CFG_KEY, JSON.stringify(cfg));
+      if (showMsg) showToast('Pengaturan GitHub disimpan lokal di browser Anda.');
+      return cfg;
+    }
+
+    function buildDataJsonPayload() {
+      return {
+        updatedAt: new Date().toISOString(),
+        customLabels: { ...state.customLabels },
+        units: state.units
+      };
+    }
+
+    function toBase64Utf8(str) {
+      const bytes = new TextEncoder().encode(str);
+      let bin = '';
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin);
+    }
+
+    function setGhPublishStatus(htmlMsg, variant = 'info') {
+      const el = document.getElementById('gh-publish-status');
+      if (!el) return;
+      const styles = {
+        info: 'bg-sky-50 border border-sky-200 text-sky-900',
+        success: 'bg-emerald-50 border border-emerald-200 text-emerald-900',
+        error: 'bg-rose-50 border border-rose-200 text-rose-900'
+      };
+      el.className = `mt-4 rounded-xl px-4 py-3 text-xs ${styles[variant] || styles.info}`;
+      el.innerHTML = htmlMsg;
+    }
+
+    async function publishDataToGithub() {
+      const cfg = saveGithubConfig(false);
+      if (!cfg.owner || !cfg.repo || !cfg.token) {
+        setGhPublishStatus('<strong>Lengkapi pengaturan dulu:</strong> Isi <strong>GitHub Username</strong>, <strong>Nama Repository</strong>, dan <strong>Personal Access Token</strong>.', 'error');
+        showToast('Lengkapi Username, Repository, dan Token GitHub dulu.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn-publish-github');
+      if (btn) btn.disabled = true;
+      setGhPublishStatus('Menghubungi GitHub API dan mengunggah <strong>' + cfg.path + '</strong>...', 'info');
+
+      try {
+        const apiUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${cfg.path.split('/').map(encodeURIComponent).join('/')}`;
+        const headers = {
+          'Authorization': `Bearer ${cfg.token}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json'
+        };
+
+        // 1. Check existing file SHA (optional if file does not exist yet)
+        let sha = null;
+        const getRes = await fetch(apiUrl + '?ref=' + encodeURIComponent(cfg.branch), { headers, cache: 'no-store' });
+        if (getRes.ok) {
+          const existing = await getRes.json();
+          sha = existing.sha || null;
+        } else if (getRes.status !== 404) {
+          const errObj = await getRes.json().catch(() => ({}));
+          throw new Error(errObj.message || `Gagal memeriksa ${cfg.path} (HTTP ${getRes.status})`);
+        }
+
+        // 2. Commit updated data.json
+        const jsonStr = JSON.stringify(buildDataJsonPayload(), null, 2);
+        const body = {
+          message: `Update KPI CP Pamanukan (${state.customLabels.current} 2026)`,
+          content: toBase64Utf8(jsonStr),
+          branch: cfg.branch
+        };
+        if (sha) body.sha = sha;
+
+        const putRes = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
+        const putData = await putRes.json().catch(() => ({}));
+        if (!putRes.ok) {
+          throw new Error(putData.message || `Gagal publish ke GitHub (HTTP ${putRes.status})`);
+        }
+
+        const commitUrl = putData.commit && putData.commit.html_url;
+        const pill = document.getElementById('gh-sync-pill');
+        if (pill) {
+          pill.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200';
+          pill.textContent = `Published (${state.customLabels.current})`;
+        }
+        const readyBadge = document.getElementById('upload-ready-badge');
+        if (readyBadge) readyBadge.classList.add('hidden');
+
+        setGhPublishStatus(
+          `<strong>Berhasil dipublikasikan ke GitHub!</strong> File <code>${cfg.path}</code> telah diperbarui untuk posisi <strong>${state.customLabels.current} 2026</strong>. Dalam ±30 detik, semua pengunjung GitHub Pages langsung menerima data terbaru.${commitUrl ? ` <a href="${commitUrl}" target="_blank" rel="noopener noreferrer" class="underline font-bold ml-1">Lihat Commit ↗</a>` : ''}`,
+          'success'
+        );
+        showToast(`Sukses publish ${cfg.path} (${state.customLabels.current}) ke GitHub!`);
+      } catch (err) {
+        setGhPublishStatus(`<strong>Gagal publish:</strong> ${err.message || 'Periksa kembali nama repo, branch, dan izin Contents: Read and write pada Token.'}`, 'error');
+        showToast('Gagal publish ke GitHub.', 'error');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    function downloadDataJson() {
+      const jsonStr = JSON.stringify(buildDataJsonPayload(), null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'data.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast('File data.json berhasil diunduh.');
+    }
+
+    async function autoLoadLiveDataJson() {
+      try {
+        if (!window.location || window.location.protocol !== 'https:') return;
+        const dataUrl = new URL('data.json', window.location.href);
+        dataUrl.searchParams.set('t', String(Date.now()));
+        const res = await fetch(dataUrl.href, { cache: 'no-store' });
+        if (!res.ok) return;
+        const payload = await res.json();
+        if (!payload || !Array.isArray(payload.units) || !payload.units.length) return;
+        state.units = payload.units;
+        if (payload.customLabels) {
+          state.customLabels = { ...state.customLabels, ...payload.customLabels };
+        }
+        const pill = document.getElementById('gh-sync-pill');
+        if (pill) {
+          pill.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200';
+          pill.textContent = `Live data.json (${state.customLabels.current})`;
+        }
+        renderAll();
+      } catch (_) {
+        // Fallback diam ke INITIAL_DATA jika data.json belum dibuat di repo
       }
     }
 
@@ -1781,6 +2153,18 @@
       const files = Array.from(e.target.files || []);
       if (files.length) handleExcelUpload(files, true);
       e.target.value = '';
+    });
+
+    document.getElementById('btn-save-gh-cfg').addEventListener('click', () => saveGithubConfig(true));
+    document.getElementById('btn-publish-github').addEventListener('click', () => publishDataToGithub());
+    document.getElementById('btn-download-json').addEventListener('click', () => downloadDataJson());
+    document.getElementById('btn-toggle-gh-token').addEventListener('click', () => {
+      const inp = document.getElementById('gh-token');
+      const btn = document.getElementById('btn-toggle-gh-token');
+      if (!inp || !btn) return;
+      const isPwd = inp.type === 'password';
+      inp.type = isPwd ? 'text' : 'password';
+      btn.textContent = isPwd ? 'Sembunyikan' : 'Tampilkan';
     });
 
     document.getElementById('btn-reset-data').addEventListener('click', () => {
@@ -2161,9 +2545,11 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       monevState.selectedTab = getDefaultMonevTab();
+      loadGithubConfig();
       renderAll();
       initVisitorCounters();
       fetchGsheetTab(monevState.selectedTab, false);
+      autoLoadLiveDataJson();
     });
   </script>
 </body>
